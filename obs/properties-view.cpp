@@ -516,6 +516,40 @@ QWidget *OBSPropertiesView::AddButton(obs_property_t *prop)
 	return NewWidget(prop, button, SIGNAL(clicked()));
 }
 
+void OBSPropertiesView::AddMedia(obs_property_t *prop, QFormLayout *layout,
+		QLabel *&label)
+{
+	struct obs_media_callbacks callbacks;
+	QHBoxLayout *subLayout = new QHBoxLayout();
+
+	WidgetInfo *info = new WidgetInfo(this, prop, nullptr);
+
+	obs_property_media_get_callbacks(prop, &callbacks);
+
+	if (callbacks.play)
+		NewButton(subLayout, info, "playIconSmall",
+				&WidgetInfo::MediaPlay);
+	if (callbacks.pause)
+		NewButton(subLayout, info, "pauseIconSmall",
+				&WidgetInfo::MediaPause);
+	if (callbacks.stop)
+		NewButton(subLayout, info, "stopIconSmall",
+				&WidgetInfo::MediaStop);
+	if (callbacks.prev)
+		NewButton(subLayout, info, "prevIconSmall",
+				&WidgetInfo::MediaPrev);
+	if (callbacks.next)
+		NewButton(subLayout, info, "nextIconSmall",
+				&WidgetInfo::MediaNext);
+
+	subLayout->addStretch(0);
+
+	label = new QLabel(QT_UTF8(obs_property_description(prop)));
+	layout->addRow(label, subLayout);
+
+	children.push_back(std::move(unique_ptr<WidgetInfo>(info)));
+}
+
 void OBSPropertiesView::AddColor(obs_property_t *prop, QFormLayout *layout,
 		QLabel *&label)
 {
@@ -650,6 +684,9 @@ void OBSPropertiesView::AddProperty(obs_property_t *property,
 		break;
 	case OBS_PROPERTY_EDITABLE_LIST:
 		AddEditableList(property, layout, label);
+		break;
+	case OBS_PROPERTY_MEDIA:
+		AddMedia(property, layout, label);
 		break;
 	}
 
@@ -1012,4 +1049,49 @@ void WidgetInfo::EditListDown()
 	}
 
 	EditableListChanged();
+}
+
+static inline void call_func(obs_property_clicked_t clicked,
+		obs_properties_t *ppts, obs_property_t *p,
+		OBSPropertiesView *view)
+{
+	if (clicked && clicked(ppts, p, view->GetObj())) {
+		QMetaObject::invokeMethod(view, "RefreshProperties",
+				Qt::QueuedConnection);
+	}
+}
+
+void WidgetInfo::MediaPlay()
+{
+	struct obs_media_callbacks callbacks;
+	obs_property_media_get_callbacks(property, &callbacks);
+	call_func(callbacks.play, view->properties.get(), property, view);
+}
+
+void WidgetInfo::MediaPause()
+{
+	struct obs_media_callbacks callbacks;
+	obs_property_media_get_callbacks(property, &callbacks);
+	call_func(callbacks.pause, view->properties.get(), property, view);
+}
+
+void WidgetInfo::MediaStop()
+{
+	struct obs_media_callbacks callbacks;
+	obs_property_media_get_callbacks(property, &callbacks);
+	call_func(callbacks.stop, view->properties.get(), property, view);
+}
+
+void WidgetInfo::MediaNext()
+{
+	struct obs_media_callbacks callbacks;
+	obs_property_media_get_callbacks(property, &callbacks);
+	call_func(callbacks.next, view->properties.get(), property, view);
+}
+
+void WidgetInfo::MediaPrev()
+{
+	struct obs_media_callbacks callbacks;
+	obs_property_media_get_callbacks(property, &callbacks);
+	call_func(callbacks.prev, view->properties.get(), property, view);
 }
