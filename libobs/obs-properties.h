@@ -53,6 +53,7 @@ enum obs_property_type {
 	OBS_PROPERTY_BUTTON,
 	OBS_PROPERTY_FONT,
 	OBS_PROPERTY_EDITABLE_LIST,
+	OBS_PROPERTY_MEDIA,
 };
 
 enum obs_combo_format {
@@ -98,6 +99,22 @@ struct obs_property;
 typedef struct obs_properties obs_properties_t;
 typedef struct obs_property   obs_property_t;
 
+/**
+ * Callback for when a button property is clicked.  If the properties
+ * need to be refreshed due to changes to the property layout, return true,
+ * otherwise return false.
+ */
+typedef bool (*obs_property_clicked_t)(obs_properties_t *props,
+		obs_property_t *property, void *data);
+
+struct obs_media_callbacks {
+	obs_property_clicked_t play;
+	obs_property_clicked_t pause;
+	obs_property_clicked_t stop;
+	obs_property_clicked_t next;
+	obs_property_clicked_t prev;
+};
+
 /* ------------------------------------------------------------------------- */
 
 EXPORT obs_properties_t *obs_properties_create(void);
@@ -125,14 +142,6 @@ EXPORT void obs_properties_apply_settings(obs_properties_t *props,
 		obs_data_t *settings);
 
 /* ------------------------------------------------------------------------- */
-
-/**
- * Callback for when a button property is clicked.  If the properties
- * need to be refreshed due to changes to the property layout, return true,
- * otherwise return false.
- */
-typedef bool (*obs_property_clicked_t)(obs_properties_t *props,
-		obs_property_t *property, void *data);
 
 EXPORT obs_property_t *obs_properties_add_bool(obs_properties_t *props,
 		const char *name, const char *description);
@@ -205,6 +214,10 @@ EXPORT obs_property_t *obs_properties_add_editable_list(obs_properties_t *props,
 		const char *name, const char *description,
 		enum obs_editable_list_type type, const char *filter,
 		const char *default_path);
+
+EXPORT obs_property_t *obs_properties_add_media(obs_properties_t *props,
+		const char *name, const char *description,
+		struct obs_media_callbacks *callbacks);
 
 /* ------------------------------------------------------------------------- */
 
@@ -281,6 +294,9 @@ EXPORT double      obs_property_list_item_float(obs_property_t *p, size_t idx);
 
 EXPORT const char *obs_property_editable_list_filter(obs_property_t *p);
 EXPORT const char *obs_property_editable_list_default_path(obs_property_t *p);
+
+EXPORT void obs_property_media_get_callbacks(obs_property_t *p,
+		struct obs_media_callbacks *callbacks);
 
 #ifdef __cplusplus
 }

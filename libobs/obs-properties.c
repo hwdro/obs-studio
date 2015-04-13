@@ -258,6 +258,7 @@ static inline size_t get_property_size(enum obs_property_type type)
 	case OBS_PROPERTY_FONT:      return 0;
 	case OBS_PROPERTY_EDITABLE_LIST:
 		return sizeof(struct editable_list_data);
+	case OBS_PROPERTY_MEDIA:     return sizeof(struct obs_media_callbacks);
 	}
 
 	return 0;
@@ -467,6 +468,19 @@ obs_property_t *obs_properties_add_editable_list(obs_properties_t *props,
 	data->type = type;
 	data->filter = bstrdup(filter);
 	data->default_path = bstrdup(default_path);
+	return p;
+}
+
+obs_property_t *obs_properties_add_media(obs_properties_t *props,
+		const char *name, const char *desc,
+		struct obs_media_callbacks *callbacks)
+{
+	if (!props || has_prop(props, name)) return NULL;
+
+	struct obs_property *p = new_prop(props, name, desc,
+			OBS_PROPERTY_MEDIA);
+	struct obs_media_callbacks *data = get_property_data(p);
+	*data = *callbacks;
 	return p;
 }
 
@@ -814,4 +828,12 @@ const char *obs_property_editable_list_default_path(obs_property_t *p)
 	struct editable_list_data *data = get_type_data(p,
 			OBS_PROPERTY_EDITABLE_LIST);
 	return data->default_path;
+}
+
+void obs_property_media_get_callbacks(obs_property_t *p,
+		struct obs_media_callbacks *callbacks)
+{
+	struct obs_media_callbacks *data = get_type_data(p, OBS_PROPERTY_MEDIA);
+	if (data && callbacks)
+		*callbacks = *data;
 }
