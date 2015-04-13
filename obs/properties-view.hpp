@@ -121,4 +121,7 @@ public:
 
 	inline void UpdateSettings() {callback(obj, settings);}
 	inline bool DeferUpdate() const {return deferUpdate;}
+
+	inline void *GetObj() {return obj;}
+
 };
