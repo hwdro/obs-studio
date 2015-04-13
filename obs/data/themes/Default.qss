@@ -35,6 +35,30 @@
     qproperty-icon: url(:/res/images/down.png);
 }
 
+/* ----------- */
+
+* [themeID="playIconSmall"] {
+    qproperty-icon: url(:/res/images/play.png);
+}
+
+* [themeID="pauseIconSmall"] {
+    qproperty-icon: url(:/res/images/pause.png);
+}
+
+* [themeID="stopIconSmall"] {
+    qproperty-icon: url(:/res/images/stop.png);
+}
+
+* [themeID="nextIconSmall"] {
+    qproperty-icon: url(:/res/images/right.png);
+}
+
+* [themeID="prevIconSmall"] {
+    qproperty-icon: url(:/res/images/left.png);
+}
+
+/* ----------- */
+
 MuteCheckBox {
     outline: none;
 }

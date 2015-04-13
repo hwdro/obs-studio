@@ -187,6 +187,28 @@ QToolButton:pressed {
     qproperty-icon: url(./Dark/down_arrow.png);
 }
 
+/* ----------- */
+
+* [themeID="playIconSmall"] {
+    qproperty-icon: url(./Dark/play.png);
+}
+
+* [themeID="pauseIconSmall"] {
+    qproperty-icon: url(./Dark/pause.png);
+}
+
+* [themeID="stopIconSmall"] {
+    qproperty-icon: url(./Dark/stop.png);
+}
+
+* [themeID="nextIconSmall"] {
+    qproperty-icon: url(./Dark/right.png);
+}
+
+* [themeID="prevIconSmall"] {
+    qproperty-icon: url(./Dark/left.png);
+}
+
 
 /* Tab Widget */
 

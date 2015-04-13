@@ -1,5 +1,10 @@
 <RCC>
   <qresource prefix="/res">
+    <file>images/left.png</file>
+    <file>images/pause.png</file>
+    <file>images/play.png</file>
+    <file>images/right.png</file>
+    <file>images/stop.png</file>
     <file>images/mute.png</file>
     <file>images/unmute.png</file>
     <file>images/configuration21_16.png</file>
