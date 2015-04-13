@@ -96,6 +96,38 @@ static void *random_create(obs_data_t *settings, obs_source_t *source)
 	return rt;
 }
 
+static bool test1234(obs_properties_t *props, obs_property_t *p, void *data)
+{
+	UNUSED_PARAMETER(props);
+	UNUSED_PARAMETER(p);
+	UNUSED_PARAMETER(data);
+	return false;
+}
+
+static obs_properties_t *random_properties(void *data)
+{
+	obs_properties_t *props = obs_properties_create();
+
+	obs_properties_add_editable_list(props, "test123",
+			"A nifty file list",
+			OBS_EDITABLE_LIST_TYPE_PATH,
+			"Whatevers (*.*)",
+			NULL);
+
+	struct obs_media_callbacks callbacks = {
+		.play = test1234,
+		.pause = test1234,
+		.stop = test1234,
+		.next = test1234,
+		.prev = test1234,
+	};
+
+	obs_properties_add_media(props, "test1234", NULL, &callbacks);
+
+	UNUSED_PARAMETER(data);
+	return props;
+}
+
 struct obs_source_info test_random = {
 	.id           = "random",
 	.type         = OBS_SOURCE_TYPE_INPUT,
@@ -103,4 +135,5 @@ struct obs_source_info test_random = {
 	.get_name     = random_getname,
 	.create       = random_create,
 	.destroy      = random_destroy,
+	.get_properties = random_properties,
 };
