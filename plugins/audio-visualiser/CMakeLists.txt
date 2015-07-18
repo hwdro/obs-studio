@@ -14,15 +14,19 @@ set(audio-visualiser_SOURCES
 	audiodata.cpp
 	audiosource.cpp
 	visualiser.cpp
+	vis-scope.cpp
 	)
+
 set(audio-visualiser_HEADERS
 	visualiser.hpp
 	audiodata.hpp
-	audiosource.hpp)
+	audiosource.hpp
+	vis-scope.hpp)
 
 add_library(audio-visualiser MODULE
 	${audio-visualiser_HEADERS}
 	${audio-visualiser_SOURCES})
+
 target_link_libraries(audio-visualiser
 	libobs
 	${audio-visualiser_PLATFORM_DEPS}

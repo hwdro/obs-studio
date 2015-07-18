@@ -22,12 +22,13 @@ class AudioData {
 	vector<float *> buffers;
 	float           volume;
 	uint32_t        channels;
+	uint32_t        sampleRate;
 	size_t          size;
 
 	void AllocBuffers();
 	void FreeBuffers();
 public:
-	AudioData(uint32_t channels_, size_t size_);
+	AudioData(uint32_t sampleRate_, uint32_t channels_, size_t size_);
 	~AudioData();
 	size_t   GetSize();
 	uint32_t GetChannels();

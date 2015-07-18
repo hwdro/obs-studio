@@ -19,37 +19,46 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "visualiser.hpp"
 
 
-#define SETTINGS_AUDIO_SOURCES  "AVIS.AudioSources"
-#define TEXT_AUDIO_SOURCES_DESC obs_module_text("AVIS.AudioSourcesDesc")
+#define SETTINGS_AUDIO_SOURCE  "avis.audiosource"
+#define TEXT_AUDIO_SOURCE_DESC obs_module_text("avis.audiosource.desc")
 
 AudioVisSource::AudioVisSource(obs_data_t *settings, obs_source_t *source_)
-	: source(source_)
+	: source(source_),
+	  audioSource(nullptr),
+	  visual(nullptr)
 {
 	cx = 512;
 	cy = 256;
-	audioSource = nullptr;
 	Update(settings);
 }
-inline AudioVisSource::~AudioVisSource()
+AudioVisSource::~AudioVisSource()
 {
-	if (audioSource)
-		delete audioSource;
+	delete audioSource;
+	delete visual;
 }
 
 void AudioVisSource::Update(obs_data_t *settings)
 {
 	struct obs_audio_info oai;
 	string audioSourceName = obs_data_get_string(settings,
-		SETTINGS_AUDIO_SOURCES);
+		SETTINGS_AUDIO_SOURCE);
 	
 	obs_get_audio_info(&oai);
 	
-	if (audioSource)
-		delete audioSource;
+	delete audioSource;
+	delete visual;
+
+	uint32_t sr, ch;
+	size_t ws;
+
+	sr = oai.samples_per_sec;
+	ch = get_audio_channels(oai.speakers);
+	ws = 512;
 
 	audioSource = new AudioSource(audioSourceName,
-		oai.samples_per_sec, 1024);
-
+		sr, ch, ws);
+	
+	visual = static_cast<Visual *>(new VisScope(cx, cy, sr, ch, ws));
 
 }
 
@@ -68,8 +77,8 @@ bool AudioVisSource::EnumAudioSourcesCallback(void *param,
 	obs_source_t *source)
 {
 	obs_property_t *prop = static_cast<obs_property_t *>(param);
-	string name          = obs_source_get_name(source);
-	uint32_t flags       = obs_source_get_output_flags(source);
+	string          name = obs_source_get_name(source);
+	uint32_t       flags = obs_source_get_output_flags(source);
 
 	if (flags & OBS_SOURCE_AUDIO)
 		obs_property_list_add_string(prop, name.c_str(), name.c_str());
@@ -79,20 +88,18 @@ bool AudioVisSource::EnumAudioSourcesCallback(void *param,
 
 static void GetAudioVisualiserDefaults(obs_data_t *settings)
 {
-
+	UNUSED_PARAMETER(settings);
 }
 
 obs_properties_t *AudioVisSource::Properties()
 {
 	obs_properties_t *props;
-	props = obs_properties_create();
 	obs_property_t   *prop;
-	prop = obs_properties_add_list(
-		props,
-		SETTINGS_AUDIO_SOURCES,
-		TEXT_AUDIO_SOURCES_DESC,
-		OBS_COMBO_TYPE_LIST,
-		OBS_COMBO_FORMAT_STRING);
+
+	props = obs_properties_create();
+	prop = obs_properties_add_list(props,
+		SETTINGS_AUDIO_SOURCE, TEXT_AUDIO_SOURCE_DESC,
+		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
 
 	for (uint32_t i = 1; i <= 10; i++) {
 		obs_source_t *source = obs_get_output_source(i);
@@ -108,7 +115,28 @@ obs_properties_t *AudioVisSource::Properties()
 
 void AudioVisSource::Tick(float seconds)
 {
+	if (audioSource)
+		audioSource->Tick(seconds);
+	if (visual) {
+		if (audioSource) {
+			bool acq = audioSource->IsSourceAcquired();
+			if (acq) {
+				if (audioSource->MutexTryLock() == EBUSY)
+					goto NoAudioSource;
+				visual->Update(audioSource->GetAudioData());
+				audioSource->MutexUnlock();
+			}
+			
+		}
+NoAudioSource:
+		visual->Tick(seconds);
+	}
+}
 
+void AudioVisSource::Render(gs_effect_t *effect)
+{
+	if (visual)
+		visual->Render(effect);
 }
 
 static void *CreateAudioVisualiserSource(obs_data_t *settings,
@@ -124,23 +152,23 @@ static void *CreateAudioVisualiserSource(obs_data_t *settings,
 
 static void DestroyAudioVisualiserSource(void *obj)
 {
-	delete static_cast<AudioVisSource*>(obj);
+	delete static_cast<AudioVisSource *>(obj);
 }
 
 static void UpdateAudioVisualiserSource(void *obj, obs_data_t *settings)
 {
-	static_cast<AudioVisSource*>(obj)->Update(settings);
+	static_cast<AudioVisSource *>(obj)->Update(settings);
 
 }
 
 static obs_properties_t *GetAudioVisualiserSourceProperties(void *obj)
 {
-	return static_cast<AudioVisSource*>(obj)->Properties();
+	return static_cast<AudioVisSource *>(obj)->Properties();
 }
 
 static const char *GetAudioVisualiserSourceName(void)
 {
-	return obs_module_text("AudioVisualiser.Name");
+	return obs_module_text("avis.plugin.name");
 }
 
 static uint32_t GetAudioVisualiserWidth(void *obj)
@@ -157,20 +185,28 @@ static void AudioVisualiserSourceTick(void *obj, float seconds)
 {
 	static_cast<AudioVisSource *>(obj)->Tick(seconds);
 }
+
+static void AudioVisualiserSourceRender(void *obj, gs_effect *effect)
+{
+	static_cast<AudioVisSource *>(obj)->Render(effect);
+}
+
+
 void RegisterAudioVisualiserSource()
 {
 	obs_source_info info = {};
-	info.id = "audio_visualiser";
-	info.type = OBS_SOURCE_TYPE_INPUT;
-	info.output_flags = OBS_SOURCE_VIDEO;
-	info.get_name = GetAudioVisualiserSourceName;
-	info.create = CreateAudioVisualiserSource;
-	info.destroy = DestroyAudioVisualiserSource;
-	info.update = UpdateAudioVisualiserSource;
-	info.get_defaults = GetAudioVisualiserDefaults;
+	info.id             = "audio_visualiser";
+	info.type           = OBS_SOURCE_TYPE_INPUT;
+	info.output_flags   = OBS_SOURCE_VIDEO;
+	info.get_name       = GetAudioVisualiserSourceName;
+	info.create         = CreateAudioVisualiserSource;
+	info.destroy        = DestroyAudioVisualiserSource;
+	info.update         = UpdateAudioVisualiserSource;
+	info.get_defaults   = GetAudioVisualiserDefaults;
 	info.get_properties = GetAudioVisualiserSourceProperties;
-	info.get_height = GetAudioVisualiserHeight;
-	info.get_width = GetAudioVisualiserWidth;
-	info.video_tick = AudioVisualiserSourceTick;
+	info.get_height     = GetAudioVisualiserHeight;
+	info.get_width      = GetAudioVisualiserWidth;
+	info.video_tick     = AudioVisualiserSourceTick;
+	info.video_render   = AudioVisualiserSourceRender;
 	obs_register_source(&info);
 }

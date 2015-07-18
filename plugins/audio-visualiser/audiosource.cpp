@@ -14,21 +14,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "audiosource.hpp"
 
+#define ACQ_RETRY_TIMEOUT 1.0f
+
 AudioSource::AudioSource(const string &sourceName_, uint32_t sampleRate_,
-	size_t windowSize_)
-	: sourceName(sourceName_),
-	  sampleRate(sampleRate_),
-	  windowSize(windowSize_)
+	uint32_t channels_, size_t windowSize_)
+	: audioData(nullptr),
+	  source(nullptr),
+	  retryTimeout(ACQ_RETRY_TIMEOUT)
 {
-	audioData = nullptr;
-	audioSource = nullptr;
 	pthread_mutex_init(&mutex, nullptr);
-	Update(sourceName_, sampleRate_, windowSize_);
+	Update(sourceName_, sampleRate_, channels_, windowSize_);
 }
 
 AudioSource::~AudioSource()
 {
-	if (audioSource)
+	if (source)
 		ReleaseAudioSource();
 
 	if (audioData)
@@ -38,25 +38,40 @@ AudioSource::~AudioSource()
 }
 
 void AudioSource::Update(const string &sourceName_, uint32_t sampleRate_,
-	size_t windowSize_)
+	uint32_t channels_, size_t windowSize_)
 {
 	sourceName = sourceName_;
 	sampleRate = sampleRate_;
 	windowSize = windowSize_;
+	channels = channels_;
+
 	if (audioData)
 		delete audioData;
-	audioData = new AudioData(MAX_AV_PLANES, windowSize);
+
+	audioData = new AudioData(sampleRate, channels, windowSize);
 	AcquireAudioSource();
 }
 
 
 obs_source_t * AudioSource::GetAudioSource()
 {
-	return audioSource;
+	return source;
+}
+
+AudioData * AudioSource::GetAudioData()
+{
+	return audioData;
 }
 
 void AudioSource::Tick(float seconds)
 {
+	if (!source) {
+		retryTimeout -= seconds;
+		if (retryTimeout < 0.0f) {
+			AcquireAudioSource();
+			retryTimeout = ACQ_RETRY_TIMEOUT;
+		}
+	}
 }
 
 int AudioSource::MutexTryLock()
@@ -77,39 +92,37 @@ int AudioSource::MutexUnlock()
 void AudioSource::SourceDataRecievedSignal(void *obj, calldata_t *calldata)
 {
 	AudioSource *audioSource = static_cast<AudioSource *>(obj);
-	struct audio_data *data = static_cast<audio_data *>
+	struct audio_data *data  = static_cast<audio_data *>
 		(calldata_ptr(calldata, "data"));
 
 	if (!audioSource)
 		return;
 
 	uint32_t channels;
-	size_t windowSize, frames, offset;
+	size_t   windowSize, frames, offset;
 	
 	if (audioSource->MutexTryLock() == EBUSY)
 		return;
 
-	frames = data->frames;
+	frames     = data->frames;
 	windowSize = audioSource->windowSize;
-	offset = windowSize - frames;
+	offset     = windowSize - frames;
 	
 	audioSource->audioData->SetVolume(data->volume);
 
 	if (frames > windowSize)
 		return;
 
-	channels = audioSource->audioData->GetChannels();
+	channels = audioSource->GetAudioData()->GetChannels();
 
 	for (uint32_t i = 0; i < channels; i++) {
 		float *abuffer = audioSource->audioData->GetBuffers()[i];
-		float *adata = reinterpret_cast<float *>(data->data[i]);
+		float *adata   = reinterpret_cast<float *>(data->data[i]);
 		if (adata) {
-			memmove(abuffer,
-				abuffer + frames,
+			memmove(abuffer, abuffer + frames,
 				offset * sizeof(float));
 
-			memcpy(abuffer + offset,
-				adata,
+			memcpy(abuffer + offset, adata,
 				frames * sizeof(float));
 		}
 	}
@@ -122,30 +135,32 @@ void AudioSource::SourceRemovedSignal(void *obj, calldata_t *calldata)
 	if (!audioSource)
 		return;
 	audioSource->ReleaseAudioSource();
-
+	UNUSED_PARAMETER(calldata);
 }
 
 void AudioSource::ReleaseAudioSource()
 {
-	if (!audioSource)
+	if (!source)
 		return;
 
 	signal_handler_t *sh;
 
-	sh = obs_source_get_signal_handler(audioSource);
+	sh = obs_source_get_signal_handler(source);
 
 	MutexLock();
 	signal_handler_disconnect(sh, "audio_data",
-		AudioSource::SourceDataRecievedSignal, audioSource);
+		AudioSource::SourceDataRecievedSignal, this);
 	MutexUnlock();
 
 	signal_handler_disconnect(sh, "remove",
-		AudioSource::SourceRemovedSignal, audioSource);
+		AudioSource::SourceRemovedSignal, this);
 
-	obs_source_release(audioSource);
-	audioSource = nullptr;
+	obs_source_release(source);
+	source = nullptr;
+	sourceName.clear();
 	//context->can_render = false;
-	//context->acq_retry_timeout = ACQ_RETRY_TIMEOUT_S;
+	retryTimeout = ACQ_RETRY_TIMEOUT;
+	
 
 }
 
@@ -178,17 +193,14 @@ void AudioSource::AcquireAudioSource()
 	if (!audio_source)
 		return;
 
-	if (audio_source == audioSource) {
+	if (audio_source == source) {
 		obs_source_release(audio_source);
-		audioSource = nullptr;
 		return;
 	}
 
 	ReleaseAudioSource();
 
-	audioSource = audio_source;
-
-	//blog(LOG_INFO, "Source acquired: %s", sourceName);
+	source = audio_source;
 
 	sh = obs_source_get_signal_handler(audio_source);
 
@@ -199,3 +211,7 @@ void AudioSource::AcquireAudioSource()
 
 }
 
+bool AudioSource::IsSourceAcquired()
+{
+	return !!source;
+}

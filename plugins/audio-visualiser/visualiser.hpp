@@ -16,21 +16,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <obs-module.h>
 #include "audiosource.hpp"
-class AudioVisSource;
+#include "vis-scope.hpp"
 
 class AudioVisSource {
 	obs_source_t *source;
 	AudioSource  *audioSource;
 	uint32_t     cx;
 	uint32_t     cy;
+
+	Visual       *visual;
+
 public:
 	AudioVisSource(obs_data_t *settings, obs_source_t *source_);
-	inline ~AudioVisSource();
+	~AudioVisSource();
+
 	uint32_t GetWidth();
 	uint32_t GetHeight();
+
 	static bool EnumAudioSourcesCallback(void *param,
 		obs_source_t *source);
-	void Update(obs_data_t *settings);
-	obs_properties_t *Properties();
-	void Tick(float seconds);
+
+	void               Update(obs_data_t *settings);
+	obs_properties_t * Properties();
+	void               Tick(float seconds);
+	void               Render(gs_effect_t *effect);
 };

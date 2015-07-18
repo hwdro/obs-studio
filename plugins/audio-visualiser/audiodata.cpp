@@ -14,8 +14,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "audiodata.hpp"
 
-AudioData::AudioData(uint32_t channels_, size_t size_)
-	: channels (channels_),
+AudioData::AudioData(uint32_t sampleRate_, uint32_t channels_, size_t size_)
+	: sampleRate(sampleRate_),
+	  channels (channels_),
 	  size     (size_)
 {
 	AllocBuffers();
@@ -30,15 +31,16 @@ void AudioData::AllocBuffers()
 {
 	buffers.clear();
 	for (uint32_t i = 0; i < channels; i++)
-		buffers.push_back(static_cast<float *>(
-		bzalloc(size * sizeof(float))
-		));
+		buffers.push_back(
+		static_cast<float *>(bzalloc(size * sizeof(float)))
+		);
 }
 
 void AudioData::FreeBuffers()
 {
-	for (uint32_t i = 0; i < buffers.size(); i++)
-		bfree(buffers[i]);
+	for (auto b : buffers)
+		bfree(b);
+
 	buffers.clear();
 }
 

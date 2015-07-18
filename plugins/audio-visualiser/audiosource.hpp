@@ -25,26 +25,37 @@ using namespace std;
 
 class AudioSource {
 	string          sourceName;
-	obs_source_t    *audioSource;
+	obs_source_t    *source;
 
 	uint32_t        sampleRate;
 	size_t          windowSize;
+	uint32_t        channels;
 
 	AudioData       *audioData;
 	pthread_mutex_t mutex;
+	float           retryTimeout;
+
+	obs_source_t * GetAudioSource();
+
+	void AcquireAudioSource();
+	void ReleaseAudioSource();
 public:
+
 	int MutexTryLock();
 	int MutexLock();
 	int MutexUnlock();
-	AudioSource(const string &sourceName_, uint32_t sampleRate_,
-		size_t windowSize_);
-	~AudioSource();
-	void Update(const string &sourceName_, uint32_t sampleRate_,
-		size_t windowSize_);
-	void Tick(float seconds);
-	obs_source_t * GetAudioSource();
+
+	AudioData    * GetAudioData();
+
 	static void SourceDataRecievedSignal(void *obj, calldata_t *calldata);
 	static void SourceRemovedSignal(void *obj, calldata_t *calldata);
-	void AcquireAudioSource();
-	void ReleaseAudioSource();
+
+	AudioSource(const string &sourceName_, uint32_t sampleRate_,
+		uint32_t channels_, size_t windowSize_);
+	~AudioSource();
+
+	void Update(const string &sourceName_, uint32_t sampleRate_,
+		uint32_t channels_, size_t windowSize_);
+	void Tick(float seconds);
+	bool IsSourceAcquired();
 };
