@@ -265,7 +265,7 @@ void audio_fft_new_data(audio_fft_t *context, audio_buffer_t *audio_in)
 	}
 }
 
-#define DB_MIN -70.0f
+#define DB_MIN -72.0f
 void audio_fft_build_spectrum(audio_fft_t *context, float frame_time)
 {
 	if (!context) return;
@@ -298,9 +298,13 @@ void audio_fft_build_spectrum(audio_fft_t *context, float frame_time)
 		}
 
 		mag /= (float)ch;
-		mag = 10.0f * log10f(mag);
 
-		mag += context->weights[b];
+		if (mag > 0.0f) {
+			mag = 10.0f * log10f(mag);
+			mag += context->weights[b];
+		} else {
+			mag = DB_MIN;
+		}
 
 		if (mag < DB_MIN)
 			mag = DB_MIN;
