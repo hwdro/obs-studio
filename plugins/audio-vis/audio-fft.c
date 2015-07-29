@@ -302,12 +302,11 @@ void audio_fft_build_spectrum(audio_fft_t *context, float frame_time)
 		if (mag > 0.0f) {
 			mag = 10.0f * log10f(mag);
 			mag += context->weights[b];
+			if (mag < DB_MIN)
+				mag = DB_MIN;
 		} else {
 			mag = DB_MIN;
 		}
-
-		if (mag < DB_MIN)
-			mag = DB_MIN;
 
 		mag = (DB_MIN - mag) / DB_MIN;
 
