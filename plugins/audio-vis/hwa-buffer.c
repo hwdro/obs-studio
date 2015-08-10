@@ -20,31 +20,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 hwa_buffer_t * hwa_buffer_create(uint32_t sample_rate, uint32_t channels,
 	size_t size)
 {
-	hwa_buffer_t *ab;
+	hwa_buffer_t *hwab;
 	uint32_t ch;
 
-	ab = bzalloc(sizeof(hwa_buffer_t));
+	hwab = bzalloc(sizeof(hwa_buffer_t));
 	
-	if (!ab) return NULL;
+	if (!hwab) return NULL;
 	
-	ab->sample_rate = sample_rate;
-	ab->channels    = channels;
-	ab->size        = size;
+	hwab->sample_rate = sample_rate;
+	hwab->channels = channels;
+	hwab->size = size;
 
 	for (ch = 0; ch < channels; ch++)
-		ab->buffers[ch] = bzalloc(size * sizeof(float));
+		hwab->buffers[ch] = bzalloc(size * sizeof(float));
 
-	return ab;
+	return hwab;
 }
 
-void hwa_buffer_destroy(hwa_buffer_t *ab)
+void hwa_buffer_destroy(hwa_buffer_t *hwab)
 {
 	uint32_t ch;
 
-	if (!ab) return;
+	if (!hwab) return;
 
-	for (ch = 0; ch < ab->channels; ch++)
-		bfree(ab->buffers[ch]);
+	for (ch = 0; ch < hwab->channels; ch++)
+		bfree(hwab->buffers[ch]);
 
-	bfree(ab);
+	bfree(hwab);
 }

@@ -24,11 +24,9 @@ struct hwa_buffer{
 	uint32_t sample_rate;
 	uint32_t channels;
 	float    volume;
-
 };
-
 typedef struct hwa_buffer hwa_buffer_t;
 
 hwa_buffer_t * hwa_buffer_create(uint32_t sample_rate, uint32_t channels,
 	size_t size);
-void hwa_buffer_destroy(hwa_buffer_t *ab);
+void hwa_buffer_destroy(hwa_buffer_t *hwab);

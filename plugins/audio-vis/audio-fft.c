@@ -92,7 +92,6 @@ audio_fft_t * audio_fft_create(uint32_t sample_rate, uint32_t channels,
 	context->rdft_context = av_rdft_init(nbits, DFT_R2C);
 	context->window_func = bzalloc(size * sizeof(float));
 	context->audio = hwa_buffer_create(sample_rate, channels, size);
-
 	window_func_init(context->window_func, size, AUDIO_WINDOW_TYPE_HANNING);
 
 	return context;
@@ -105,14 +104,12 @@ void audio_fft_process(audio_fft_t *context)
 	if (!context->rdft_context) return;
 
 	hwa_buffer_t *audio = context->audio;
-	uint32_t         ch = audio->channels;
-	size_t           ws = audio->size;
+	uint32_t ch = audio->channels;
+	size_t ws = audio->size;
 
 	for (uint32_t i = 0; i < ch; i++) {
-		if (audio->buffers[i]) {
-			av_rdft_calc(context->rdft_context,
-				audio->buffers[i]);
-		}
+		if (audio->buffers[i])
+			av_rdft_calc(context->rdft_context, audio->buffers[i]);
 	}
 
 	__m128 wsize = _mm_set_ps1((float)ws * 0.5f);
@@ -126,7 +123,6 @@ void audio_fft_process(audio_fft_t *context)
 				_mm_div_ps(_mm_load_ps(buffer + j), wsize));
 		}
 	}
-
 }
 
 void audio_fft_audio_in(audio_fft_t *context, hwa_buffer_t *audio_in)
@@ -137,7 +133,7 @@ void audio_fft_audio_in(audio_fft_t *context, hwa_buffer_t *audio_in)
 
 	hwa_buffer_t *audio = context->audio;
 	uint32_t ch = audio->channels;
-	size_t   ws = audio->size;
+	size_t ws = audio->size;
 
 	__m128 vol = _mm_set1_ps(audio_in->volume);
 

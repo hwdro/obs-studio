@@ -33,6 +33,6 @@ typedef struct hwa_monitor hwa_monitor_t;
 
 hwa_monitor_t * hwa_monitor_create(const char *name,
 	uint32_t sample_rate, uint32_t channels, size_t size);
-void hwa_monitor_destroy(hwa_monitor_t *am);
-void hwa_monitor_acquire_obs_source(hwa_monitor_t *am);
-void hwa_monitor_release_obs_source(hwa_monitor_t *am);
+void hwa_monitor_destroy(hwa_monitor_t *monitor);
+void hwa_monitor_acquire_obs_source(hwa_monitor_t *monitor);
+void hwa_monitor_release_obs_source(hwa_monitor_t *monitor);

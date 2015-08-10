@@ -55,11 +55,10 @@ static void hwa_monitor_data_received_signal(void *vptr,
 void hwa_monitor_acquire_obs_source(hwa_monitor_t *monitor)
 {
 	if (!monitor) return;
-	
 	if (monitor->source) return;
 
 	signal_handler_t *sh;
-	obs_source_t *src   = NULL;
+	obs_source_t *src = NULL;
 	struct dstr *m_name = &monitor->name;
 
 	for (uint32_t i = 1; i <= 10; i++) {
@@ -134,7 +133,7 @@ static void hwa_monitor_data_received_signal(void *vptr,
 
 	hwa_buffer_t *m_data = monitor->data;
 	window_size = m_data->size;
-	channels    = m_data->channels;
+	channels = m_data->channels;
 
 	frames = data->frames;
 
@@ -159,7 +158,6 @@ static void hwa_monitor_data_received_signal(void *vptr,
 	}
 
 BAD_REALLY_BAD:
-
 	pthread_mutex_unlock(&monitor->data_mutex);
 }
 

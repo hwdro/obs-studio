@@ -27,9 +27,7 @@ static float a_weighting(float frequency)
 
 	ra = (n1 * f2 * f2);
 	ra /= (f2 + n2) * (f2 + n1) *
-		sqrtf(f2 + 107.7f * 107.7f)
-		*
-		sqrtf(f2 + 737.9f * 737.9f);
+		sqrtf(f2 + 107.7f * 107.7f) * sqrtf(f2 + 737.9f * 737.9f);
 	ra = 2.0f + 20.0f * log10f(ra);
 	if (fabs(ra) < 0.002f)
 		ra = 0.0f;
@@ -62,15 +60,16 @@ static uint32_t frequency_to_bin(float freq, uint32_t sample_rate, size_t size)
 	return (uint32_t)(freq / get_bandwidth(sample_rate, size));
 }
 
-static int calc_octave_bins(uint32_t *bins, float *weights, uint32_t sample_rate,
-	size_t size, int oct_den, enum AUDIO_WEIGHTING_TYPES weighting_type)
+static int calc_octave_bins(uint32_t *bins, float *weights,
+	uint32_t sample_rate, size_t size, int oct_den,
+	enum AUDIO_WEIGHTING_TYPES weighting_type)
 {
 
 	float up_freq, low_freq;
 	uint32_t bin_l, bin_u;
 
-	float   center = 31.62777f;
-	int      bins_nr = 0;
+	float center = 31.62777f;
+	int bins_nr = 0;
 	float max_freq = sample_rate / 2.0f;
 
 	if (max_freq > 16000.0f)
@@ -154,14 +153,14 @@ void as_process_fft_data(audio_spectrum_t *context,
 	if (!fft_context->audio) return;
 
 	hwa_buffer_t *audio = fft_context->audio;
-	uint32_t           ch = audio->channels;
-	size_t             ws = audio->size;
+	uint32_t *bi = context->bins_indexes;
+	uint32_t ch = audio->channels;
 	uint32_t bins = context->bins;
-	uint32_t  *bi = context->bins_indexes;
+	size_t ws = audio->size;
 
 	for (uint32_t b = 0; b < bins; b++) {
 		uint32_t start = bi[b] + 1;
-		uint32_t  stop = bi[b + 1] + 1;
+		uint32_t stop = bi[b + 1] + 1;
 		float mag = 0;
 		for (uint32_t nch = 0; nch < ch; nch++) {
 			float *buffer = audio->buffers[nch];
@@ -207,10 +206,12 @@ uint32_t audio_spectrum_get_bins(audio_spectrum_t *context)
 {
 	return context->bins;
 }
+
 uint32_t audio_spectrum_get_bands(audio_spectrum_t *context)
 {
 	return context->bins - 1;
 }
+
 float * audio_spectrum_get_spectrum_data(audio_spectrum_t *context)
 {
 	return context->spectrum_data;

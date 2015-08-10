@@ -32,8 +32,8 @@ enum AUDIO_WINDOW_TYPES {
 
 struct audio_fft {
 	hwa_buffer_t *audio;
-	RDFTContext    *rdft_context;
-	float          *window_func;
+	RDFTContext  *rdft_context;
+	float        *window_func;
 };
 
 typedef struct audio_fft audio_fft_t;

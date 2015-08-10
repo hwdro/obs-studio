@@ -46,7 +46,6 @@ struct sp_bar
 	int b_y;
 	int width;
 };
-
 typedef struct sp_bar sp_bar_t;
 
 struct spectrum_visual
@@ -66,7 +65,6 @@ struct spectrum_visual
 
 	DARRAY(sp_bar_t) bars;
 };
-
 typedef struct spectrum_visual spectrum_visual_t;
 
 static void spectrum_bars_init(spectrum_visual_t *context);
@@ -78,7 +76,7 @@ static void * spectrum_create(obs_data_t *settings, uint32_t sample_rate,
 {
 	spectrum_visual_t *context = bzalloc(sizeof(spectrum_visual_t));
 	
-	uint32_t size = (uint32_t)obs_data_get_int(settings,
+	uint32_t nbits = (uint32_t)obs_data_get_int(settings,
 		SPECTRUM_WINDOW_SIZE);
 	
 	uint32_t oct_fract = (uint32_t)obs_data_get_int(settings,
@@ -87,6 +85,8 @@ static void * spectrum_create(obs_data_t *settings, uint32_t sample_rate,
 	uint32_t wg_type = (uint32_t)obs_data_get_int(settings,
 		SPECTRUM_WG_TYPE);
 	
+	uint32_t size = 2 << nbits;
+
 	context->fg_color = (uint32_t)obs_data_get_int(settings,
 		SPECTRUM_FG_COLOR);
 	context->bg_color = (uint32_t)obs_data_get_int(settings,
@@ -166,13 +166,17 @@ static void spectrum_process_audio(void *data, hwa_buffer_t *audio)
 	audio_fft_audio_in(context->fft, audio);
 }
 
+#define MIN_FFT_BITS 8
+#define MAX_FFT_BITS 11
+
 void spectrum_get_defaults(obs_data_t *settings)
 {
-	obs_data_set_default_int(settings, SPECTRUM_WINDOW_SIZE, 1024);
-	obs_data_set_default_int(settings, SPECTRUM_OCTAVE_FRACT, 3);
+	obs_data_set_default_int(settings, SPECTRUM_WINDOW_SIZE, MAX_FFT_BITS);
+	obs_data_set_default_int(settings, SPECTRUM_OCTAVE_FRACT, 12);
 	obs_data_set_default_int(settings, SPECTRUM_FG_COLOR, 0xFF00FFFF);
 	obs_data_set_default_int(settings, SPECTRUM_BG_COLOR, 0x00000000);
-	obs_data_set_default_int(settings, SPECTRUM_WG_TYPE, 1);
+	obs_data_set_default_int(settings, SPECTRUM_WG_TYPE,
+		AUDIO_WEIGHTING_TYPE_Z);
 }
 
 #define SP_ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
@@ -190,11 +194,10 @@ static void spectrum_get_properties(void *data, obs_properties_t *props)
 		OBS_COMBO_FORMAT_INT);
 
 	struct dstr str = { 0 };
-	int ws[] = { 512, 1024, 2048, 4096 };
 
-	for (int i = 0; i < SP_ARRAY_LEN(ws); i++) {
-		dstr_printf(&str, "%d", ws[i]);
-		obs_property_list_add_int(prop, str.array, ws[i]);
+	for (int i = MIN_FFT_BITS; i < MAX_FFT_BITS + 1; i++) {
+		dstr_printf(&str, "%d", 2 << i);
+		obs_property_list_add_int(prop, str.array, i);
 	}
 
 	prop = obs_properties_add_list(
