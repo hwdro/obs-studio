@@ -253,19 +253,14 @@ static size_t spectrum_frame_size(void *data)
 }
 
 
-struct sp_rect
-{
-	int x, y;
-	int cx, cy;
-};
-typedef struct sp_rect sp_rect_t;
+typedef struct gs_rect sp_rect_t;
 
 static inline void sp_memset32(uint32_t *pixels, uint32_t val, size_t size)
 {
 	uint32_t remaining = (uint32_t)size & 3;
-	uint32_t aligned   = (uint32_t)size - remaining;
-	__m128i *start     = (__m128i *)pixels;
-	__m128i pval       = _mm_set1_epi32(val);
+	uint32_t aligned = (uint32_t)size - remaining;
+	__m128i *start = (__m128i *)pixels;
+	__m128i pval = _mm_set1_epi32(val);
 
 	for (uint32_t i = 0; i < aligned / 4; i++)
 		_mm_store_si128(start + i, pval);
@@ -273,6 +268,7 @@ static inline void sp_memset32(uint32_t *pixels, uint32_t val, size_t size)
 	for (uint32_t i = aligned; i < size; i++)
 		*(pixels + i) = val;
 }
+
 static inline void sp_rect_set(sp_rect_t *r, int x, int y, int cx, int cy)
 {
 	if (!r) return;
@@ -296,13 +292,13 @@ static inline bool sp_rect_intersection(sp_rect_t *a, sp_rect_t *b,
 	{
 		sp_rect_set(result, x, y, nx - x, ny - y);
 		return true;
-	} else {
-		return false;
-	}
+	} 
+
+	return false;
 };
 
-static inline void sp_draw_bar(uint32_t *pixels, sp_rect_t *bar, sp_rect_t *area,
-	uint32_t color)
+static inline void sp_draw_bar(uint32_t *pixels, sp_rect_t *bar,
+	sp_rect_t *area, uint32_t color)
 {
 	sp_rect_t res;
 	int x, y, w, h;
@@ -331,7 +327,7 @@ static void spectrum_bars_draw(spectrum_visual_t *context)
 	uint32_t *framebuffer = (uint32_t *)context->framebuffer;
 	
 	audio_fft_process(context->fft);
-	as_process_fft_data(context->spectrum, context->fft, 
+	audio_spectrum_process_fft_data(context->spectrum, context->fft, 
 		context->frame_time);
 
 	sp_memset32(framebuffer, context->bg_color, cx * cy);
@@ -361,21 +357,21 @@ static void spectrum_bars_draw(spectrum_visual_t *context)
 static void spectrum_bars_init(spectrum_visual_t *context)
 {
 	uint32_t bands = audio_spectrum_get_bands(context->spectrum);
-	uint32_t    cx = context->cx;
-	uint32_t    cy = context->cy;
+	uint32_t cx = context->cx;
+	uint32_t cy = context->cy;
 
 	da_init(context->bars);
 
-	int fbw  = cx / bands;
-	int pad  = (cx - bands * fbw) / 2;
+	int fbw = cx / bands;
+	int pad = (cx - bands * fbw) / 2;
 	int bpad = (int)(fbw * 0.2f);
-	int bw   = fbw - bpad;
+	int bw = fbw - bpad;
 	
 	sp_bar_t bar;
 
 	for (uint32_t b = 0; b < bands; b++) {
-		bar.b_x   = pad + fbw * b;
-		bar.b_y   = cy;
+		bar.b_x = fbw * b;
+		bar.b_y  = cy;
 		bar.width = bw;
 		da_push_back(context->bars, &bar);
 	}

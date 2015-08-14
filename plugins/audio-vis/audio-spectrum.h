@@ -36,7 +36,7 @@ typedef struct audio_spectrum audio_spectrum_t;
 audio_spectrum_t * audio_spectrum_create(uint32_t sample_rate, size_t size,
 	int oct_den, enum AUDIO_WEIGHTING_TYPES wg_type);
 void audio_spectrum_destroy(audio_spectrum_t *as);
-void as_process_fft_data(audio_spectrum_t *context,
+void audio_spectrum_process_fft_data(audio_spectrum_t *context,
 	audio_fft_t *fft_context, float frame_time);
 uint32_t audio_spectrum_get_bins(audio_spectrum_t *context);
 uint32_t audio_spectrum_get_bands(audio_spectrum_t *context);

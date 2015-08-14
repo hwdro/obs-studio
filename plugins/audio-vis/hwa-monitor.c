@@ -24,8 +24,6 @@ hwa_monitor_t * hwa_monitor_create(const char *name, uint32_t sample_rate,
 	
 	monitor = bzalloc(sizeof(hwa_monitor_t));
 	
-	if (!monitor) return NULL;
-
 	monitor->data = hwa_buffer_create(sample_rate, channels, size);
 	pthread_mutex_init(&monitor->data_mutex, NULL);
 	dstr_init_copy(&monitor->name, name);

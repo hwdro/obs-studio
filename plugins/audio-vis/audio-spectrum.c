@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 static float a_weighting(float frequency)
 {
 	float ra;
-	float  f = frequency;
+	float f = frequency;
 	float f2 = f * f;
 	float n1 = 12200.0f * 12200.0f;
 	float n2 = 20.6f * 20.6f;
@@ -29,15 +29,17 @@ static float a_weighting(float frequency)
 	ra /= (f2 + n2) * (f2 + n1) *
 		sqrtf(f2 + 107.7f * 107.7f) * sqrtf(f2 + 737.9f * 737.9f);
 	ra = 2.0f + 20.0f * log10f(ra);
+	
 	if (fabs(ra) < 0.002f)
 		ra = 0.0f;
+	
 	return ra;
 }
 
 static float c_weighting(float frequency)
 {
 	float ra;
-	float  f = frequency;
+	float f = frequency;
 	float f2 = f * f;
 	float n1 = 12200.0f * 12200.0f;
 	float n2 = 20.6f * 20.6f;
@@ -45,8 +47,10 @@ static float c_weighting(float frequency)
 	ra = (n1 * f2);
 	ra /= (f2 + n2) * (f2 + n1);
 	ra = 0.06f + 20.0f * log10f(ra);
+
 	if (fabs(ra) < 0.002f)
 		ra = 0.0f;
+	
 	return ra;
 }
 
@@ -146,7 +150,7 @@ void audio_spectrum_destroy(audio_spectrum_t *context)
 
 #define DB_MIN -72.0f
 
-void as_process_fft_data(audio_spectrum_t *context,
+void audio_spectrum_process_fft_data(audio_spectrum_t *context,
 	audio_fft_t *fft_context, float frame_time)
 {
 	if (!context) return;
@@ -197,7 +201,7 @@ void as_process_fft_data(audio_spectrum_t *context,
 		else if (context->spectrum_data[b] < mag) {
 			context->spectrum_data[b] +=
 				(mag - context->spectrum_data[b]) *
-				frame_time * 15.0f;
+				frame_time * 7.5f;
 		}
 	}
 }
