@@ -185,6 +185,7 @@ private:
 	void ChangeProfile();
 
 	void SaveProjectNow();
+	void InhibitPowerStateChange(bool inhibit);
 
 	obs_hotkey_pair_id streamingHotkeys, recordingHotkeys;
 

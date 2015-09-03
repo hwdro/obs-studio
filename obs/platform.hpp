@@ -46,4 +46,5 @@ std::vector<std::string> GetPreferredLocales();
 #ifdef _WIN32
 uint32_t GetWindowsVersion();
 void SetAeroEnabled(bool enable);
+void Win32InhibitPowerStateChange(bool inhibit);
 #endif

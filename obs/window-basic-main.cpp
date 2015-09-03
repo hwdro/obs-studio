@@ -1164,6 +1164,15 @@ void OBSBasic::SaveProjectNow()
 	SaveProjectDeferred();
 }
 
+void OBSBasic::InhibitPowerStateChange(bool inhibit)
+{
+#ifdef _WIN32
+	Win32InhibitPowerStateChange(inhibit);
+#else
+	UNUSED_PARAMETER(inhibit);
+#endif
+}
+
 void OBSBasic::SaveProject()
 {
 	if (disableSaving)
@@ -3050,9 +3059,13 @@ void OBSBasic::StartStreaming()
 	if (outputHandler->StreamingActive())
 		return;
 
+	bool prevActiveState = outputHandler->Active();
+
 	if (outputHandler->StartStreaming(service)) {
 		ui->streamButton->setEnabled(false);
 		ui->streamButton->setText(QTStr("Basic.Main.Connecting"));
+		if (!prevActiveState)
+			InhibitPowerStateChange(true);
 	}
 }
 
@@ -3066,6 +3079,7 @@ void OBSBasic::StopStreaming()
 	if (!outputHandler->Active()) {
 		ui->profileMenu->setEnabled(true);
 		blog(LOG_INFO, STREAMING_STOP);
+		InhibitPowerStateChange(false);
 	}
 }
 
@@ -3126,6 +3140,9 @@ void OBSBasic::StartRecording()
 {
 	SaveProject();
 
+	if (!outputHandler->Active())
+		InhibitPowerStateChange(true);
+
 	if (!outputHandler->RecordingActive())
 		outputHandler->StartRecording();
 }
@@ -3139,6 +3156,7 @@ void OBSBasic::StopRecording()
 
 	if (!outputHandler->Active()) {
 		ui->profileMenu->setEnabled(true);
+		InhibitPowerStateChange(false);
 	}
 }
 

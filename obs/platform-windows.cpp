@@ -202,3 +202,15 @@ void SetAeroEnabled(bool enable)
 
 	func(enable ? DWM_EC_ENABLECOMPOSITION : DWM_EC_DISABLECOMPOSITION);
 }
+
+void Win32InhibitPowerStateChange(bool inhibit)
+{
+	if (inhibit) {
+		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, 0, 0, 0);
+		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED |
+			ES_AWAYMODE_REQUIRED | ES_DISPLAY_REQUIRED);
+	} else {
+		SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, 1, 0, 0);
+		SetThreadExecutionState(ES_CONTINUOUS);
+	}
+}
