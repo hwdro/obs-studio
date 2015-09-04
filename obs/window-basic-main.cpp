@@ -1168,6 +1168,8 @@ void OBSBasic::InhibitPowerStateChange(bool inhibit)
 {
 #ifdef _WIN32
 	Win32InhibitPowerStateChange(inhibit);
+#elif __APPLE__
+	OSXInhibitPowerStateChange(inhibit);
 #else
 	UNUSED_PARAMETER(inhibit);
 #endif

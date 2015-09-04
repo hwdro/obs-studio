@@ -47,4 +47,6 @@ std::vector<std::string> GetPreferredLocales();
 uint32_t GetWindowsVersion();
 void SetAeroEnabled(bool enable);
 void Win32InhibitPowerStateChange(bool inhibit);
+#elif __APPLE__
+void OSXInhibitPowerStateChange(bool inhibit);
 #endif

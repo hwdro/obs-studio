@@ -24,6 +24,8 @@
 #include <unistd.h>
 
 #import <AppKit/AppKit.h>
+#import <IOKit/pwr_mgt/IOPMLib.h>
+#import <CoreFoundation/CoreFoundation.h>
 
 using namespace std;
 
@@ -129,4 +131,23 @@ vector<string> GetPreferredLocales()
 	}
 
 	return result;
+}
+
+static IOPMAssertionID assertionTypeNoDisplaySleepID;
+
+void OSXInhibitPowerStateChange(bool inhibit)
+{
+	if (inhibit) {
+		CFStringRef *reasonForActivity =
+			CFSTR("OBS-Studio: Streaming/Recording In Progress");
+		IOReturn success = IOPMAssertionCreateWithName(
+			kIOPMAssertionTypeNoDisplaySleep, kIOPMAssertionLevelOn,
+			reasonForActivity, &assertionTypeNoDisplaySleepID);
+		if (success != kIOReturnSuccess)
+			assertionTypeNoDisplaySleepID = 0;
+	} else {
+		if(assertionTypeNoDisplaySleepID) {
+			IOPMAssertionRelease(assertionTypeNoDisplaySleepID);
+		}
+	}
 }
