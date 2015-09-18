@@ -21,11 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <util/dstr.h>
 #include <util/threading.h>
 
-#include "hwa-buffer.h"
+#include "avis-buffer.h"
 
 struct hwa_monitor {
 	obs_source_t    *source;
-	hwa_buffer_t    *data;
+	avis_buffer_t    *data;
 	struct dstr     name;
 	pthread_mutex_t data_mutex;
 };

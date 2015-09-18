@@ -10,7 +10,7 @@ find_package(FFmpeg REQUIRED
 include_directories(${FFMPEG_INCLUDE_DIRS})
 
 set(audio-vis_SOURCES
-	hwa-buffer.c
+	avis-buffer.c
 	hwa-monitor.c
 	audio-vis.c
 	audio-fft.c
@@ -18,7 +18,7 @@ set(audio-vis_SOURCES
 	visual.c
 	vis-spectrum.c)
 set(audio-vis_HEADERS
-	hwa-buffer.h
+	avis-buffer.h
 	hwa-monitor.h
 	audio-fft.h
 	audio-spectrum.h

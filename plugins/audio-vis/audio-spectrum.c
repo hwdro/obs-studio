@@ -156,7 +156,7 @@ void audio_spectrum_process_fft_data(audio_spectrum_t *context,
 	if (!context) return;
 	if (!fft_context->audio) return;
 
-	hwa_buffer_t *audio = fft_context->audio;
+	avis_buffer_t *audio = fft_context->audio;
 	uint32_t *bi = context->bins_indexes;
 	uint32_t ch = audio->channels;
 	uint32_t bins = context->bins;

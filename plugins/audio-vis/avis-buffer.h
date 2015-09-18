@@ -18,15 +18,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 #include <obs.h>
 
-struct hwa_buffer{
+struct avis_buffer{
 	float    *buffers[MAX_AV_PLANES];
 	size_t   size;
 	uint32_t sample_rate;
 	uint32_t channels;
 	float    volume;
 };
-typedef struct hwa_buffer hwa_buffer_t;
+typedef struct avis_buffer avis_buffer_t;
 
-hwa_buffer_t * hwa_buffer_create(uint32_t sample_rate, uint32_t channels,
+avis_buffer_t * avis_buffer_create(uint32_t sample_rate, uint32_t channels,
 	size_t size);
-void hwa_buffer_destroy(hwa_buffer_t *hwab);
+void avis_buffer_destroy(avis_buffer_t *hwab);

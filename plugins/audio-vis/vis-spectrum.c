@@ -156,7 +156,7 @@ static void spectrum_tick(void *data, float seconds)
 	spectrum_bars_draw(context);
 }
 
-static void spectrum_process_audio(void *data, hwa_buffer_t *audio)
+static void spectrum_process_audio(void *data, avis_buffer_t *audio)
 {
 	spectrum_visual_t *context = (spectrum_visual_t *)data;
 	

@@ -70,7 +70,7 @@ void visual_tick(visual_info_t *vi, float seconds)
 
 }
 
-void visual_process_audio(visual_info_t *vi, hwa_buffer_t *audio)
+void visual_process_audio(visual_info_t *vi, avis_buffer_t *audio)
 {
 	if (!vi) return;
 	if (vi->data && vi->visual.process_audio)

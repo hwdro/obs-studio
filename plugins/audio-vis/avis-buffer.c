@@ -15,15 +15,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 
-#include "hwa-buffer.h"
+#include "avis-buffer.h"
 
-hwa_buffer_t * hwa_buffer_create(uint32_t sample_rate, uint32_t channels,
+avis_buffer_t * avis_buffer_create(uint32_t sample_rate, uint32_t channels,
 	size_t size)
 {
-	hwa_buffer_t *hwab;
+	avis_buffer_t *hwab;
 	uint32_t ch;
 
-	hwab = bzalloc(sizeof(hwa_buffer_t));
+	hwab = bzalloc(sizeof(avis_buffer_t));
 	
 	if (!hwab) return NULL;
 	
@@ -37,14 +37,14 @@ hwa_buffer_t * hwa_buffer_create(uint32_t sample_rate, uint32_t channels,
 	return hwab;
 }
 
-void hwa_buffer_destroy(hwa_buffer_t *hwab)
+void avis_buffer_destroy(avis_buffer_t *ab)
 {
 	uint32_t ch;
 
-	if (!hwab) return;
+	if (!ab) return;
 
-	for (ch = 0; ch < hwab->channels; ch++)
-		bfree(hwab->buffers[ch]);
+	for (ch = 0; ch < ab->channels; ch++)
+		bfree(ab->buffers[ch]);
 
-	bfree(hwab);
+	bfree(ab);
 }

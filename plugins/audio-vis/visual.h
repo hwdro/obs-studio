@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <obs.h>
-#include "hwa-buffer.h"
+#include "avis-buffer.h"
 
 struct visual {
 	void  *(*create)(obs_data_t *settings, uint32_t sample_rate, 
@@ -27,7 +27,7 @@ struct visual {
 
 	void  (*render)(void *data, gs_effect_t *effect);
 	void  (*tick)(void *data, float seconds);
-	void  (*process_audio)(void *data, hwa_buffer_t *audio);
+	void  (*process_audio)(void *data, avis_buffer_t *audio);
 
 	void  (*get_defaults)(obs_data_t *settings);
 	void  (*get_properties)(void *data, obs_properties_t *props);
@@ -59,7 +59,7 @@ void visual_render(visual_info_t *vi, gs_effect_t *effect);
 
 void visual_tick(visual_info_t *vi, float seconds);
 
-void visual_process_audio(visual_info_t *vi, hwa_buffer_t *audio);
+void visual_process_audio(visual_info_t *vi, avis_buffer_t *audio);
 
 void visual_get_properties(visual_info_t *vi, obs_properties_t *props);
 

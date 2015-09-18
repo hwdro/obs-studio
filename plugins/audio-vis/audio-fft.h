@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 #include <obs.h>
 #include <libavcodec/avfft.h>
-#include "hwa-buffer.h"
+#include "avis-buffer.h"
 
 enum AUDIO_WINDOW_TYPES {
 	AUDIO_WINDOW_TYPE_RECTANGULAR,
@@ -31,7 +31,7 @@ enum AUDIO_WINDOW_TYPES {
 };
 
 struct audio_fft {
-	hwa_buffer_t *audio;
+	avis_buffer_t *audio;
 	RDFTContext  *rdft_context;
 	float        *window_func;
 };
@@ -41,5 +41,5 @@ typedef struct audio_fft audio_fft_t;
 audio_fft_t * audio_fft_create(uint32_t sample_rate, uint32_t channels,
 	size_t size);
 void audio_fft_process(audio_fft_t *context);
-void audio_fft_audio_in(audio_fft_t *context, hwa_buffer_t *audio_in);
+void audio_fft_audio_in(audio_fft_t *context, avis_buffer_t *audio_in);
 void audio_fft_destroy(audio_fft_t *context);
