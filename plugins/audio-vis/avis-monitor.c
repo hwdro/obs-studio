@@ -15,29 +15,29 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 
-#include "hwa-monitor.h"
+#include "avis-monitor.h"
 
-hwa_monitor_t * hwa_monitor_create(const char *name, uint32_t sample_rate,
+avis_monitor_t * avis_monitor_create(const char *name, uint32_t sample_rate,
 	uint32_t channels, size_t size)
 {
-	hwa_monitor_t *monitor;
+	avis_monitor_t *monitor;
 	
-	monitor = bzalloc(sizeof(hwa_monitor_t));
+	monitor = bzalloc(sizeof(avis_monitor_t));
 	
 	monitor->data = avis_buffer_create(sample_rate, channels, size);
 	pthread_mutex_init(&monitor->data_mutex, NULL);
 	dstr_init_copy(&monitor->name, name);
 
-	hwa_monitor_acquire_obs_source(monitor);
+	avis_monitor_acquire_obs_source(monitor);
 
 	return monitor;
 }
 
-void hwa_monitor_destroy(hwa_monitor_t *monitor)
+void avis_monitor_destroy(avis_monitor_t *monitor)
 {
 	if (!monitor) return;
 
-	hwa_monitor_release_obs_source(monitor);
+	avis_monitor_release_obs_source(monitor);
 	dstr_free(&monitor->name);
 	avis_buffer_destroy(monitor->data);
 	pthread_mutex_destroy(&monitor->data_mutex);
@@ -46,11 +46,11 @@ void hwa_monitor_destroy(hwa_monitor_t *monitor)
 }
 
 
-static void hwa_monitor_removed_signal(void *vptr, calldata_t *calldata);
-static void hwa_monitor_data_received_signal(void *vptr,
+static void avis_monitor_removed_signal(void *vptr, calldata_t *calldata);
+static void avis_monitor_data_received_signal(void *vptr,
 	calldata_t *calldata);
 
-void hwa_monitor_acquire_obs_source(hwa_monitor_t *monitor)
+void avis_monitor_acquire_obs_source(avis_monitor_t *monitor)
 {
 	if (!monitor) return;
 	if (monitor->source) return;
@@ -86,12 +86,12 @@ void hwa_monitor_acquire_obs_source(hwa_monitor_t *monitor)
 
 	sh = obs_source_get_signal_handler(src);
 	signal_handler_connect(sh, "audio_data",
-		hwa_monitor_data_received_signal, monitor);
+		avis_monitor_data_received_signal, monitor);
 	signal_handler_connect(sh, "remove",
-		hwa_monitor_removed_signal, monitor);
+		avis_monitor_removed_signal, monitor);
 }
 
-void hwa_monitor_release_obs_source(hwa_monitor_t *monitor)
+void avis_monitor_release_obs_source(avis_monitor_t *monitor)
 {
 	if (!monitor) return;
 	if (!monitor->source) return;
@@ -103,9 +103,9 @@ void hwa_monitor_release_obs_source(hwa_monitor_t *monitor)
 	pthread_mutex_lock(&monitor->data_mutex);
 
 	signal_handler_disconnect(sh, "audio_data",
-		hwa_monitor_data_received_signal, monitor);
+		avis_monitor_data_received_signal, monitor);
 	signal_handler_disconnect(sh, "remove",
-		hwa_monitor_removed_signal, monitor);
+		avis_monitor_removed_signal, monitor);
 
 	pthread_mutex_unlock(&monitor->data_mutex);
 
@@ -114,12 +114,12 @@ void hwa_monitor_release_obs_source(hwa_monitor_t *monitor)
 }
 
 
-static void hwa_monitor_data_received_signal(void *vptr,
+static void avis_monitor_data_received_signal(void *vptr,
 	calldata_t *calldata)
 {
 	uint32_t channels;
 	size_t frames, offset, window_size;
-	hwa_monitor_t *monitor = vptr;
+	avis_monitor_t *monitor = vptr;
 
 	if (!monitor) return;
 
@@ -159,12 +159,12 @@ BAD_REALLY_BAD:
 	pthread_mutex_unlock(&monitor->data_mutex);
 }
 
-static void hwa_monitor_removed_signal(void *vptr, calldata_t *calldata)
+static void avis_monitor_removed_signal(void *vptr, calldata_t *calldata)
 {
-	hwa_monitor_t *monitor = vptr;
+	avis_monitor_t *monitor = vptr;
 	
 	if (!monitor) return;
 
-	hwa_monitor_release_obs_source(monitor);
+	avis_monitor_release_obs_source(monitor);
 	UNUSED_PARAMETER(calldata);
 }

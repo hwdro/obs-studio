@@ -23,16 +23,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "avis-buffer.h"
 
-struct hwa_monitor {
+struct avis_monitor {
 	obs_source_t    *source;
 	avis_buffer_t    *data;
 	struct dstr     name;
 	pthread_mutex_t data_mutex;
 };
-typedef struct hwa_monitor hwa_monitor_t;
+typedef struct avis_monitor avis_monitor_t;
 
-hwa_monitor_t * hwa_monitor_create(const char *name,
+avis_monitor_t * avis_monitor_create(const char *name,
 	uint32_t sample_rate, uint32_t channels, size_t size);
-void hwa_monitor_destroy(hwa_monitor_t *monitor);
-void hwa_monitor_acquire_obs_source(hwa_monitor_t *monitor);
-void hwa_monitor_release_obs_source(hwa_monitor_t *monitor);
+void avis_monitor_destroy(avis_monitor_t *monitor);
+void avis_monitor_acquire_obs_source(avis_monitor_t *monitor);
+void avis_monitor_release_obs_source(avis_monitor_t *monitor);

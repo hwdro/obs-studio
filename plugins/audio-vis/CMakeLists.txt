@@ -11,7 +11,7 @@ include_directories(${FFMPEG_INCLUDE_DIRS})
 
 set(audio-vis_SOURCES
 	avis-buffer.c
-	hwa-monitor.c
+	avis-monitor.c
 	audio-vis.c
 	audio-fft.c
 	audio-spectrum.c
@@ -19,7 +19,7 @@ set(audio-vis_SOURCES
 	vis-spectrum.c)
 set(audio-vis_HEADERS
 	avis-buffer.h
-	hwa-monitor.h
+	avis-monitor.h
 	audio-fft.h
 	audio-spectrum.h
 	visual.h

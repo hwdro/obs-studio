@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <util/threading.h>
 #include <util/dstr.h>
 
-#include "hwa-monitor.h"
+#include "avis-monitor.h"
 #include "vis-spectrum.h"
 
 #define blog(log_level, format, ...) \
@@ -44,7 +44,7 @@ struct audiovis_source {
 	obs_source_t    *source;
 	float           acq_retry_timeout;
 
-	hwa_monitor_t *monitor;
+	avis_monitor_t *monitor;
 	visual_info_t   *vis_info;
 };
 
@@ -80,9 +80,9 @@ static void audiovis_source_update(void *data, obs_data_t *settings)
 	frame_size = visual_frame_size(vi);
 
 	if (context->monitor)
-		hwa_monitor_destroy(context->monitor);
+		avis_monitor_destroy(context->monitor);
 
-	context->monitor = hwa_monitor_create(audio_source_name,
+	context->monitor = avis_monitor_create(audio_source_name,
 		sample_rate, channels, frame_size);
 }
 
@@ -113,7 +113,7 @@ static void audiovis_source_destroy(void *data)
 	struct audiovis_source *context = data;
 	if (!context) return;
 
-	hwa_monitor_destroy(context->monitor);
+	avis_monitor_destroy(context->monitor);
 	visual_destroy(context->vis_info);
 	vi_destroy(context->vis_info);
 	bfree(context);
@@ -180,7 +180,7 @@ static void audiovis_source_tick(void *data, float seconds)
 	if (!context->monitor->source) {
 		context->acq_retry_timeout -= seconds;
 		if (context->acq_retry_timeout < 0.0f) {
-			hwa_monitor_acquire_obs_source(context->monitor);
+			avis_monitor_acquire_obs_source(context->monitor);
 			context->acq_retry_timeout = ACQ_RETRY_TIMEOUT_S;
 		}
 	}
