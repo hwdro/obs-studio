@@ -496,6 +496,8 @@ static bool obs_init_data(void)
 		goto fail;
 	if (pthread_mutex_init(&data->sources_mutex, &attr) != 0)
 		goto fail;
+	if (pthread_mutex_init(&data->audio_sources_mutex, &attr) != 0)
+		goto fail;
 	if (pthread_mutex_init(&data->displays_mutex, &attr) != 0)
 		goto fail;
 	if (pthread_mutex_init(&data->outputs_mutex, &attr) != 0)
@@ -563,6 +565,7 @@ static void obs_free_data(void)
 
 	pthread_mutex_destroy(&data->user_sources_mutex);
 	pthread_mutex_destroy(&data->sources_mutex);
+	pthread_mutex_destroy(&data->audio_sources_mutex);
 	pthread_mutex_destroy(&data->displays_mutex);
 	pthread_mutex_destroy(&data->outputs_mutex);
 	pthread_mutex_destroy(&data->encoders_mutex);
