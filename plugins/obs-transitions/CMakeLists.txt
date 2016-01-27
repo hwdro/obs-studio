@@ -4,6 +4,7 @@ set(obs-transitions_SOURCES
 	obs-transitions.c
 	transition-fade.c
 	transition-cut.c
+	transition-fadetofrom.c
 	)
 
 add_library(obs-transitions MODULE
