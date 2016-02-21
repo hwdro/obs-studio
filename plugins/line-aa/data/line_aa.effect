@@ -1,0 +1,42 @@
+uniform float4x4 ViewProj;
+uniform float4x4 color_matrix;
+uniform float3 color_range_min = {0.0, 0.0, 0.0};
+uniform float3 color_range_max = {1.0, 1.0, 1.0};
+
+uniform float width;
+uniform float feather;
+
+
+struct VertInOut {
+	float4 pos : POSITION;
+	float4 color : COLOR;
+	float4 normal : NORMAL;
+	float4 tangent : TANGENT;
+};
+
+VertInOut VSDefault(VertInOut vert_in)
+{
+	VertInOut vert_out;
+	float4 pos = float4(vert_in.pos.xyz, 1.0);
+	pos *= vert_in.normal * width;
+	vert_out.pos = mul(pos, ViewProj);
+	vert_out.color = vert_in.color;
+	vert_out.normal = vert_in.normal;
+	vert_out.tangent = vert_in.tangent;
+	return vert_out;
+}
+
+float4 PSDraw(VertInOut vert_in) : TARGET
+{
+	//return vert_in.color;
+	return float4(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(vert_in);
+		pixel_shader  = PSDraw(vert_in);
+	}
+}
