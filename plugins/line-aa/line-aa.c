@@ -299,7 +299,7 @@ static void *lineaa_source_create(obs_data_t *settings, obs_source_t *source)
 	obs_leave_graphics();
 
 	bfree(file);
-
+	ctx->effect = effect;
 	ctx->ep_w = gs_effect_get_param_by_name(effect, "width");
 	ctx->ep_r = gs_effect_get_param_by_name(effect, "feather");
 
@@ -361,9 +361,6 @@ static void lineaa_source_render(void *data, gs_effect_t *effect)
 {
 	struct source_context *ctx = data;
 	
-	gs_technique_t *tech = gs_effect_get_technique(effect, "Draw");
-	
-	size_t      passes;
 	gs_vertbuffer_t *vb = ctx->vb;
 	gs_indexbuffer_t *ib = ctx->ib;
 	if (!vb || !ib) return;
@@ -375,18 +372,9 @@ static void lineaa_source_render(void *data, gs_effect_t *effect)
 
 	gs_effect_set_float(ctx->ep_w, 100);
 	gs_effect_set_float(ctx->ep_r, 2);
-	passes = gs_technique_begin(tech);
 
-	for (size_t i = 0; i < passes; i++) {
-		if (gs_technique_begin_pass(tech, i)) {
-
+	while (gs_effect_loop(ctx->effect, "Draw"))
 			gs_draw(GS_TRIS, 0, 0);
-
-			gs_technique_end_pass(tech);
-		}
-	}
-
-	gs_technique_end(tech);
 }
 
 static void lineaa_source_tick(void *data, float seconds)
