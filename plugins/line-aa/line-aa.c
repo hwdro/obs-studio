@@ -97,17 +97,22 @@ static void lines_context_update(struct lines_context *lctx)
 	//        |
 	//        ↓ -t
 	//
-	line = lctx->lines.array;
 
+	line = lctx->lines.array;
+	
 	for (uint32_t c = 0; c < lctx->lines.num; c++) {
+		struct vec3 start, end;
+		
+		vec3_copy(&start, &line[c].start);
+		vec3_copy(&end, &line[c].end);
 
 		for (uint32_t i = 0; i < 2; i++)
-			da_push_back(lctx->vertices, &line[c].start);
+			da_push_back(lctx->vertices, &start);
 		
 		for (uint32_t i = 0; i < 2; i++)
-			da_push_back(lctx->vertices, &line[c].end);
+			da_push_back(lctx->vertices, &end);
 
-		line_normal(&normal, &line[c].end, &line[c].start);
+		line_normal(&normal, &end, &start);
 		vec3_neg(&neg_normal, &normal);
 
 		for (uint32_t i = 0; i < 2; i++) {
@@ -115,7 +120,7 @@ static void lines_context_update(struct lines_context *lctx)
 			da_push_back(lctx->normals, &neg_normal);
 		}
 
-		line_tangent(&tangent, &line[c].end, &line[c].start);
+		line_tangent(&tangent, &end, &start);
 		vec3_neg(&neg_tangent, &tangent);
 
 		for (uint32_t i = 0; i < 2; i++)
@@ -127,12 +132,12 @@ static void lines_context_update(struct lines_context *lctx)
 
 
 		for (uint32_t i = 0; i < 3; i++) {
-			uint16_t vi = c * 6 + i;
+			uint16_t vi = c * 4 + i;
 			da_push_back(lctx->indexes, &vi);
 		}
 
-		for (uint32_t i = 0; i < 3; i++) {
-			uint16_t vi = c * 6 + i + 1;
+		for (uint32_t i = 3; i > 0; i--) {
+			uint16_t vi = c * 4 + i;
 			da_push_back(lctx->indexes, &vi);
 		}
 
@@ -168,11 +173,15 @@ struct source_context {
 	struct vec4 color;
 	gs_vertbuffer_t *vb;
 	gs_indexbuffer_t *ib;
+	
+	uint32_t cx, cy;
 
 	gs_effect_t *effect;
 
 	gs_eparam_t *ep_w;
 	gs_eparam_t *ep_r;
+	gs_eparam_t *ep_sx;
+	gs_eparam_t *ep_sy;
 
 	struct lines_context *lines_ctx;
 };
@@ -188,7 +197,7 @@ static void setup_vertex_buffer(struct source_context *ctx)
 		ctx->vb = NULL;
 		gs_vertexbuffer_destroy(tmp);
 	}
-
+	
 	vbd = gs_vbdata_create();
 	
 	vbd->num_tex = 0;
@@ -226,12 +235,13 @@ static void setup_index_buffer(struct source_context *ctx)
 		gs_indexbuffer_destroy(tmp);
 		ctx->ib = NULL;
 	}
+	
 	size_t num  = ctx->lines_ctx->indexes.num;
 	size_t size = sizeof(uint16_t) * num;
 
 	ctx->ib = gs_indexbuffer_create(
 	    GS_UNSIGNED_SHORT, ctx->lines_ctx->indexes.array, num, GS_DYNAMIC);
-
+	
 	obs_leave_graphics();
 }
 
@@ -242,7 +252,7 @@ static void cleanup_index_buffer(struct source_context *ctx)
 	gs_indexbuffer_t *tmp = ctx->ib;
 	gs_indexbuffer_destroy(tmp);
 	ctx->ib = NULL;
-
+	
 	obs_leave_graphics();
 }
 
@@ -252,12 +262,15 @@ static void draw_some_lines(struct source_context *ctx)
 
 	lines_start(ctx->lines_ctx);
 		
-	vec4_from_rgba(&color, 0xFFFF00FF);
+	vec4_from_rgba(&color, 0xFF00FFFF);
 	line_f(ctx->lines_ctx, 0.0f, 0.0f, 1280.0f, 720.0f, &color, 10.0f);
 	
-	vec4_from_rgba(&color, 0xFF0000FF);
-	line_f(ctx->lines_ctx, 0.0f, 720.0f, 1280.0f, 0.0f, &color, 30.0f);
-	
+	//vec4_from_rgba(&color, 0xFF0000FF);
+	//line_f(ctx->lines_ctx, 0.0f, 720.0f, 1280.0f, 0.0f, &color, 30.0f);
+
+	vec4_from_rgba(&color, 0xFF000000);
+	line_f(ctx->lines_ctx, 0.0f, 360.0f, 1280.0f, 360.0f, &color, 30.0f);
+
 	lines_end(ctx->lines_ctx);
 
 	setup_index_buffer(ctx);
@@ -302,6 +315,8 @@ static void *lineaa_source_create(obs_data_t *settings, obs_source_t *source)
 	ctx->effect = effect;
 	ctx->ep_w = gs_effect_get_param_by_name(effect, "width");
 	ctx->ep_r = gs_effect_get_param_by_name(effect, "feather");
+	ctx->ep_sx = gs_effect_get_param_by_name(effect, "ep_sx");
+	ctx->ep_sy = gs_effect_get_param_by_name(effect, "ep_sy");
 
 	return ctx;
 }
@@ -371,10 +386,15 @@ static void lineaa_source_render(void *data, gs_effect_t *effect)
 	gs_load_indexbuffer(ib);
 
 	gs_effect_set_float(ctx->ep_w, 100);
-	gs_effect_set_float(ctx->ep_r, 2);
+	gs_effect_set_float(ctx->ep_r, 20);
+	gs_effect_set_float(ctx->ep_sx, 1280);
+	gs_effect_set_float(ctx->ep_sy, 720);
 
 	while (gs_effect_loop(ctx->effect, "Draw"))
 			gs_draw(GS_TRIS, 0, 0);
+	
+	gs_load_indexbuffer(NULL);
+	gs_load_vertexbuffer(NULL);
 }
 
 static void lineaa_source_tick(void *data, float seconds)

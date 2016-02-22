@@ -5,7 +5,8 @@ uniform float3 color_range_max = {1.0, 1.0, 1.0};
 
 uniform float width;
 uniform float feather;
-
+uniform float ep_sx;
+uniform float ep_sy;
 
 struct VertInOut {
 	float4 pos : POSITION;
@@ -18,7 +19,7 @@ VertInOut VSDefault(VertInOut vert_in)
 {
 	VertInOut vert_out;
 	float4 pos = float4(vert_in.pos.xyz, 1.0);
-	pos *= vert_in.normal * width;
+	pos += vert_in.normal * width / 2.0f;
 	vert_out.pos = mul(pos, ViewProj);
 	vert_out.color = vert_in.color;
 	vert_out.normal = vert_in.normal;
@@ -28,8 +29,10 @@ VertInOut VSDefault(VertInOut vert_in)
 
 float4 PSDraw(VertInOut vert_in) : TARGET
 {
-	//return vert_in.color;
-	return float4(1.0f, 1.0f, 1.0f, 1.0f);
+	float4 color = vert_in.color;
+	color.a *= 1.0f - length(vert_in.normal);
+	return color;
+	//return float4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 technique Draw
