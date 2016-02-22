@@ -30,7 +30,7 @@ VertInOut VSDefault(VertInOut vert_in)
 float4 PSDraw(VertInOut vert_in) : TARGET
 {
 	float4 color = vert_in.color;
-	color.a *= 1.0f - length(vert_in.normal);
+	color.a *= 1.0f - length(vert_in.normal * vert_in.tangent);
 	return color;
 	//return float4(1.0f, 1.0f, 1.0f, 1.0f);
 }
