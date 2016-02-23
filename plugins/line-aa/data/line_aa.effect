@@ -19,20 +19,35 @@ VertInOut VSDefault(VertInOut vert_in)
 {
 	VertInOut vert_out;
 	float4 pos = float4(vert_in.pos.xyz, 1.0);
-	pos += vert_in.normal * width / 2.0f;
+	float2 nn =  normalize(vert_in.normal.xy);
+	float w = length(vert_in.normal.xy);
+	pos += vert_in.normal + float4(nn * 0.5f, 0.0f, 0.0f);
 	vert_out.pos = mul(pos, ViewProj);
 	vert_out.color = vert_in.color;
 	vert_out.normal = vert_in.normal;
-	vert_out.tangent = vert_in.tangent;
+	vert_out.tangent.xy = nn;
+	vert_out.tangent.z = length(vert_in.normal.xy);
+	vert_out.tangent.w = length(vert_in.normal.xy + nn * 0.5f);
 	return vert_out;
 }
 
 float4 PSDraw(VertInOut vert_in) : TARGET
 {
 	float4 color = vert_in.color;
-	color.a *= 1.0f - length(vert_in.normal * vert_in.tangent);
+	float2 pos = vert_in.pos.xy;
+	float2 normal = vert_in.normal.xy;
+	float w = vert_in.tangent.z;
+	float wf = vert_in.tangent.w;
+	float ln = length(normal);
+	float r  = (wf - w);
+	if (w > 0.5)
+		r*=1.75f;
+	if(ln >= w - r) {
+		float f = 1.0f - smoothstep(w - r, wf, ln);
+		color.a *= f * 0.9f;
+	}
 	return color;
-	//return float4(1.0f, 1.0f, 1.0f, 1.0f);
+
 }
 
 technique Draw

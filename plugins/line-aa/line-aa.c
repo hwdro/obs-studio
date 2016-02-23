@@ -111,15 +111,22 @@ static void lines_context_update(struct lines_context *lctx)
 		
 		for (uint32_t i = 0; i < 2; i++)
 			da_push_back(lctx->vertices, &end);
-
+		
 		line_normal(&normal, &end, &start);
+		
+		float width = line[c].width / 2.0f;
+		
+		if (width < 0.5f)
+			width = 0.5f;
+		
+		vec3_mulf(&normal, &normal, width);
 		vec3_neg(&neg_normal, &normal);
 
 		for (uint32_t i = 0; i < 2; i++) {
 			da_push_back(lctx->normals, &normal);
 			da_push_back(lctx->normals, &neg_normal);
 		}
-
+		
 		line_tangent(&tangent, &end, &start);
 		vec3_neg(&neg_tangent, &tangent);
 
@@ -140,10 +147,11 @@ static void lines_context_update(struct lines_context *lctx)
 			uint16_t vi = c * 4 + i;
 			da_push_back(lctx->indexes, &vi);
 		}
-
-		uint32_t color = vec4_to_rgba(&line[c].color);
-		for (uint32_t i = 0; i < 4; i++)
+		
+		for (uint32_t i = 0; i < 4; i++) {
+			uint32_t color = vec4_to_rgba(&line[c].color);
 			da_push_back(lctx->colors, &color);
+		}
 	}
 }
 
@@ -258,18 +266,28 @@ static void cleanup_index_buffer(struct source_context *ctx)
 
 static void draw_some_lines(struct source_context *ctx)
 {
-	struct vec4 color;
+	struct vec4 color; 
 
 	lines_start(ctx->lines_ctx);
 		
-	vec4_from_rgba(&color, 0xFF00FFFF);
+	vec4_from_rgba(&color, 0xFFF0377F);
 	line_f(ctx->lines_ctx, 0.0f, 0.0f, 1280.0f, 720.0f, &color, 10.0f);
 	
-	//vec4_from_rgba(&color, 0xFF0000FF);
-	//line_f(ctx->lines_ctx, 0.0f, 720.0f, 1280.0f, 0.0f, &color, 30.0f);
+	vec4_from_rgba(&color, 0xFF0000FF);
+	line_f(ctx->lines_ctx, 50.0f, 720.0f, 1280.0f, 190.0f, &color, 2.0f);
 
 	vec4_from_rgba(&color, 0xFF000000);
-	line_f(ctx->lines_ctx, 0.0f, 360.0f, 1280.0f, 360.0f, &color, 30.0f);
+	line_f(ctx->lines_ctx, 0.0f, 360.0f, 1280.0f, 360.0f, &color, 5.0f);
+
+	vec4_from_rgba(&color, 0xFF00FFFF);
+	int step = 400;
+	for (int i = 0; i < 1900; i += step) {
+		struct vec3 rand;
+		vec3_rand(&rand, 1);
+		vec4_from_vec3(&color, &rand);
+		color.w = 1.0f;
+		line_f(ctx->lines_ctx, i + step / 2, 1080, i + step/2 + step/4 , 1080 - rand.x * 1080, &color, step / 2 );
+	}
 
 	lines_end(ctx->lines_ctx);
 
@@ -337,14 +355,14 @@ static void lineaa_source_destroy(void *data)
 static uint32_t lineaa_source_getwidth(void *data)
 {
 	UNUSED_PARAMETER(data);
-	return 1280;
+	return 1920;
 }
 
 
 static uint32_t lineaa_source_getheight(void *data)
 {
 	UNUSED_PARAMETER(data);
-	return 720;
+	return 1080;
 }
 
 
