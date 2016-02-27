@@ -7,8 +7,6 @@ struct swipe_info {
 	gs_effect_t *effect;
 	gs_eparam_t *a_param;
 	gs_eparam_t *b_param;
-	gs_eparam_t *swipe_param;
-	gs_eparam_t *swipe_in_param;
 	gs_eparam_t *direction_param;
 
 	struct vec2 dir;
@@ -55,8 +53,6 @@ static void *swipe_create(obs_data_t *settings, obs_source_t *source)
 	swipe->effect = effect;
 	swipe->a_param = gs_effect_get_param_by_name(effect, "tex_a");
 	swipe->b_param = gs_effect_get_param_by_name(effect, "tex_b");
-	swipe->swipe_param = gs_effect_get_param_by_name(effect, "swipe_val");
-	swipe->swipe_in_param = gs_effect_get_param_by_name(effect, "swipe_in");
 	swipe->direction_param = gs_effect_get_param_by_name(effect, "direction");
 
 	obs_source_update(source, settings);
@@ -92,12 +88,17 @@ static void swipe_callback(void *data, gs_texture_t *a, gs_texture_t *b, float t
 		uint32_t cx, uint32_t cy)
 {
 	struct swipe_info *swipe = data;
+	struct vec2 dir;
 
-	gs_effect_set_texture(swipe->a_param, a);
-	gs_effect_set_texture(swipe->b_param, b);
-	gs_effect_set_float(swipe->swipe_param, get_easing(t));
-	gs_effect_set_bool(swipe->swipe_in_param, swipe->swipe_in);
-	gs_effect_set_vec2(swipe->direction_param, &swipe->dir);
+	float easing	       = get_easing(t);
+	float one_minus_easing = 1.0f - easing;
+	float ps_easing        = swipe->swipe_in ? one_minus_easing : easing;
+
+	vec2_mulf(&dir, &swipe->dir, ps_easing);
+
+	gs_effect_set_texture(swipe->a_param, swipe->swipe_in ? b : a);
+	gs_effect_set_texture(swipe->b_param, swipe->swipe_in ? a : b);
+	gs_effect_set_vec2(swipe->direction_param, &dir);
 
 	while (gs_effect_loop(swipe->effect, "Swipe"))
 		gs_draw_sprite(NULL, 0, cx, cy);
