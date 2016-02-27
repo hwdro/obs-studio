@@ -1,0 +1,63 @@
+uniform float4x4 ViewProj;
+uniform texture2d tex_a;
+uniform texture2d tex_b;
+uniform float2 direction;
+uniform float swipe_val;
+uniform bool swipe_in;
+
+sampler_state textureSampler {
+	Filter    = Linear;
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in)
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float4 PSSwipe(VertData v_in) : TARGET
+{
+	float2 swipe_uv = direction * swipe_val;
+
+	float2 a_uv;
+	float2 b_uv;
+
+	if (swipe_in) {
+		swipe_uv = direction - swipe_uv;
+		a_uv = v_in.uv;
+		b_uv = v_in.uv + swipe_uv;
+		swipe_uv = b_uv;
+	} else {
+		a_uv = v_in.uv + swipe_uv;
+		b_uv = v_in.uv;
+		swipe_uv = a_uv;
+	}
+
+	float4 a_val = tex_a.Sample(textureSampler, a_uv);
+	float4 b_val = tex_b.Sample(textureSampler, b_uv);
+
+	bool opaque = (swipe_uv.x < 0.0 || swipe_uv.y < 0.0 ||
+	               swipe_uv.x > 1.0 || swipe_uv.y > 1.0);
+	if (swipe_in)
+		opaque = !opaque;
+
+	return opaque ? b_val : a_val;
+}
+
+technique Swipe
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSSwipe(v_in);
+	}
+}
