@@ -11,41 +11,99 @@ uniform float ep_sy;
 struct VertInOut {
 	float4 pos : POSITION;
 	float4 color : COLOR;
-	float4 normal : NORMAL;
-	float4 tangent : TANGENT;
+	float4 normal : NORMAL; // xy= width * normal / zw= length * tangent
+	float4 tangent : TANGENT; // Nothing important yet;
 };
 
 VertInOut VSDefault(VertInOut vert_in)
 {
 	VertInOut vert_out;
+	
 	float4 pos = float4(vert_in.pos.xyz, 1.0);
-	float2 nn =  normalize(vert_in.normal.xy);
-	float w = length(vert_in.normal.xy);
-	pos += vert_in.normal + float4(nn * 0.5f, 0.0f, 0.0f);
-	vert_out.pos = mul(pos, ViewProj);
+	float feather = 0.5f;
+	float2 scaled_normal  = vert_in.normal.xy;
+	float2 scaled_tangent = vert_in.tangent.xy; // vert_in.normal.zw;
+
+	float2 normal =  normalize(scaled_normal);
+	float2 tangent = normalize(scaled_tangent);
+
+	float2 expand_t = scaled_normal + normal * feather;
+	float2 expand_l = tangent * feather * 2.0f;
+
+	// expand transversely + longitudinally
+
+	pos.xy += expand_t;
+	//pos.xy += expand_l;
+	
+	
+	// normal pack xy = normal | z = width / 2 and w = feather t
+	// tangent pack xy = tangent | z = length /2 and w = feather l
+
+	float line_width  = length(scaled_normal);
+	float line_length = length(scaled_tangent);
+
+	float line_width_f  = length(expand_t);
+	float line_length_f = line_length + length(expand_l);
+
+	vert_out.normal.xy = scaled_normal;
+	vert_out.normal.z  = line_width;
+	vert_out.normal.w  = line_width_f - line_width;
+
+	vert_out.tangent.xy = scaled_tangent;
+	vert_out.tangent.z  = line_length;
+	vert_out.tangent.w  = line_length_f - line_length;
+
+	vert_out.pos   = mul(pos, ViewProj);
 	vert_out.color = vert_in.color;
-	vert_out.normal = vert_in.normal;
-	vert_out.tangent.xy = nn;
-	vert_out.tangent.z = length(vert_in.normal.xy);
-	vert_out.tangent.w = length(vert_in.normal.xy + nn * 0.5f);
+
 	return vert_out;
 }
 
 float4 PSDraw(VertInOut vert_in) : TARGET
 {
-	float4 color = vert_in.color;
-	float2 pos = vert_in.pos.xy;
+	float2 pos    = vert_in.pos.xy;
+	
+	float4 color  = vert_in.color;
+	return color;
 	float2 normal = vert_in.normal.xy;
-	float w = vert_in.tangent.z;
-	float wf = vert_in.tangent.w;
-	float ln = length(normal);
-	float r  = (wf - w);
-	if (w > 0.5)
-		r*=1.75f;
-	if(ln >= w - r) {
-		float f = 1.0f - smoothstep(w - r, wf, ln);
-		color.a *= f * 0.9f;
-	}
+	float w       = vert_in.normal.z;
+	float r       = vert_in.normal.w;
+	float ln      = length(normal);
+
+	float2 tangent = vert_in.tangent.xy;
+	float l	       = vert_in.tangent.z;
+	float r2       = vert_in.tangent.w;
+	float lt       = length(tangent);
+/*
+	//if (w > 0.5f)
+	//	r *=1.75f;
+
+	//if (l > 0.5f)
+	//	r2 *= 1.75f;
+	float r3 = r;
+	if(w == r)
+		r3 = r + 0.25f;
+	color.a *= smoothstep(w + r, w - r3, ln);
+	color.a *= smoothstep(l + r2, l - r2, lt);
+
+*/	
+	if(w == 0.5f)
+		w = 0.35f;
+	float de = w  - ln;
+	float dx = ddx(de);
+	float dy = ddy(de);
+	float2 gl = length(float2(dx,dy));
+	float2 t = gl * 2.0f;
+	float alpha = saturate(de/t + 0.25f);
+	
+	de = l - lt;
+	dx = ddx(de);
+	dy = ddy(de);
+	gl = length(float2(dx,dy));
+	t = gl * 2.0f;
+	alpha *= saturate(de/t + 0.25f);
+	color.a *= lerp(0.0f , color.a, alpha);
+
 	return color;
 
 }

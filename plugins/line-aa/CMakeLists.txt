@@ -12,7 +12,9 @@ include_directories(${FFMPEG_INCLUDE_DIRS})
 set(line-aa_SOURCES
 	line-aa.c)
 set(line-aa_HEADERS
-	line-aa.h)
+	line-aa.h
+	slidingbuf.h
+	audio-window.h)
 
 add_library(line-aa MODULE
 	${line-aa_HEADERS}

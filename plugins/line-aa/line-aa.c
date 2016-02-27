@@ -1,5 +1,5 @@
 ﻿#include <obs-module.h>
-
+#include "audio-window.h"
 
 #define LINEAA_PLUGIN_NAME  obs_module_text("lineaa.plugin.name")
 
@@ -81,6 +81,8 @@ static void line_tangent(struct vec3 *dst, struct vec3 *v1, struct vec3 *v2)
 
 static void lines_context_update(struct lines_context *lctx)
 {
+	//profile_start("LINE-AA");
+	//profile_end("LINE-AA");
 	uint16_t vertice_index = 0;
 	struct line_info *line;
 	struct vec3 normal, neg_normal;
@@ -100,7 +102,15 @@ static void lines_context_update(struct lines_context *lctx)
 
 	line = lctx->lines.array;
 	
-	for (uint32_t c = 0; c < lctx->lines.num; c++) {
+	size_t num = lctx->lines.num;
+	
+	da_reserve(lctx->vertices, num * 4);
+	da_reserve(lctx->normals, num * 4);
+	da_reserve(lctx->tangents, num * 4);
+	da_reserve(lctx->colors, num * 4);
+	da_reserve(lctx->indexes, num * 6);
+
+	for (uint32_t c = 0; c < num; c++) {
 		struct vec3 start, end;
 		
 		vec3_copy(&start, &line[c].start);
@@ -115,7 +125,7 @@ static void lines_context_update(struct lines_context *lctx)
 		line_normal(&normal, &end, &start);
 		
 		float width = line[c].width / 2.0f;
-		
+
 		if (width < 0.5f)
 			width = 0.5f;
 		
@@ -128,6 +138,11 @@ static void lines_context_update(struct lines_context *lctx)
 		}
 		
 		line_tangent(&tangent, &end, &start);
+		
+		float line_length = vec3_dist(&start, &end);
+
+		vec3_mulf(&tangent, &tangent, line_length);
+		
 		vec3_neg(&neg_tangent, &tangent);
 
 		for (uint32_t i = 0; i < 2; i++)
@@ -156,7 +171,6 @@ static void lines_context_update(struct lines_context *lctx)
 }
 
 
-
 static void lines_start(struct lines_context *lctx)
 {
 	lines_context_reset(lctx);
@@ -181,10 +195,13 @@ struct source_context {
 	struct vec4 color;
 	gs_vertbuffer_t *vb;
 	gs_indexbuffer_t *ib;
+	gs_texrender_t *texrender;
+	gs_eparam_t *ep_tex;
 	
 	uint32_t cx, cy;
 
 	gs_effect_t *effect;
+	gs_effect_t *tex_effect;
 
 	gs_eparam_t *ep_w;
 	gs_eparam_t *ep_r;
@@ -192,6 +209,7 @@ struct source_context {
 	gs_eparam_t *ep_sy;
 
 	struct lines_context *lines_ctx;
+	float time;
 };
 
 static void setup_vertex_buffer(struct source_context *ctx)
@@ -205,6 +223,11 @@ static void setup_vertex_buffer(struct source_context *ctx)
 		ctx->vb = NULL;
 		gs_vertexbuffer_destroy(tmp);
 	}
+
+	size_t num = ctx->lines_ctx->vertices.num;
+	
+	if (!num)
+		return;
 	
 	vbd = gs_vbdata_create();
 	
@@ -215,7 +238,7 @@ static void setup_vertex_buffer(struct source_context *ctx)
 	vbd->normals = ctx->lines_ctx->normals.array;
 	vbd->tangents = ctx->lines_ctx->tangents.array;
 	vbd->colors = ctx->lines_ctx->colors.array;
-	vbd->num = ctx->lines_ctx->vertices.num;
+	vbd->num = num;
 	
 	ctx->vb = gs_vertexbuffer_create(vbd, GS_DYNAMIC);
 	
@@ -246,6 +269,9 @@ static void setup_index_buffer(struct source_context *ctx)
 	
 	size_t num  = ctx->lines_ctx->indexes.num;
 	size_t size = sizeof(uint16_t) * num;
+	
+	if (!num)
+		return;
 
 	ctx->ib = gs_indexbuffer_create(
 	    GS_UNSIGNED_SHORT, ctx->lines_ctx->indexes.array, num, GS_DYNAMIC);
@@ -266,27 +292,28 @@ static void cleanup_index_buffer(struct source_context *ctx)
 
 static void draw_some_lines(struct source_context *ctx)
 {
-	struct vec4 color; 
+	struct vec4 color;
 
 	lines_start(ctx->lines_ctx);
 		
 	vec4_from_rgba(&color, 0xFFF0377F);
-	line_f(ctx->lines_ctx, 0.0f, 0.0f, 1280.0f, 720.0f, &color, 10.0f);
+	line_f(ctx->lines_ctx, 0.0f, 0.0f, 1920.0f, 1080.0f, &color, 100.0f);
 	
 	vec4_from_rgba(&color, 0xFF0000FF);
-	line_f(ctx->lines_ctx, 50.0f, 720.0f, 1280.0f, 190.0f, &color, 2.0f);
+	line_f(ctx->lines_ctx, 50.0f, 720.0f, 1280.0f, 190.0f, &color, 1.0f);
 
 	vec4_from_rgba(&color, 0xFF000000);
 	line_f(ctx->lines_ctx, 0.0f, 360.0f, 1280.0f, 360.0f, &color, 5.0f);
-
+	line_f(ctx->lines_ctx, 360.0f, 360.0f, 761.0f, 761.0f, &color, 50.0f);
 	vec4_from_rgba(&color, 0xFF00FFFF);
-	int step = 400;
-	for (int i = 0; i < 1900; i += step) {
+	int step = 1;
+	for (int i = 0; i < 1920; i += step + 3) {
 		struct vec3 rand;
 		vec3_rand(&rand, 1);
 		vec4_from_vec3(&color, &rand);
 		color.w = 1.0f;
-		line_f(ctx->lines_ctx, i + step / 2, 1080, i + step/2 + step/4 , 1080 - rand.x * 1080, &color, step / 2 );
+		//line_f(ctx->lines_ctx, 10 + i + step, 1080, 10 + i + step + 1 , 720, &color, step );
+		step++;
 	}
 
 	lines_end(ctx->lines_ctx);
@@ -306,7 +333,7 @@ static void lineaa_source_update(void *data, obs_data_t *settings)
 {
 	struct source_context *ctx = data;
 
-	draw_some_lines(ctx);
+	//draw_some_lines(ctx);
 
 	UNUSED_PARAMETER(settings);
 }
@@ -317,7 +344,7 @@ static void *lineaa_source_create(obs_data_t *settings, obs_source_t *source)
 	gs_effect_t *effect;
 
 	char *file = obs_module_file("line_aa.effect");
-
+	char *file_tex = obs_module_file("texture.effect");
 	ctx = bzalloc(sizeof(struct source_context));
 	ctx->lines_ctx = bzalloc(sizeof(struct lines_context));
 	
@@ -327,15 +354,24 @@ static void *lineaa_source_create(obs_data_t *settings, obs_source_t *source)
 
 	obs_enter_graphics();
 	effect = gs_effect_create_from_file(file, NULL);
+	ctx->tex_effect = gs_effect_create_from_file(file_tex, NULL);
+	ctx->texrender = gs_texrender_create(GS_RGBA, GS_ZS_NONE);
 	obs_leave_graphics();
 
 	bfree(file);
+	bfree(file_tex);
 	ctx->effect = effect;
+
 	ctx->ep_w = gs_effect_get_param_by_name(effect, "width");
 	ctx->ep_r = gs_effect_get_param_by_name(effect, "feather");
 	ctx->ep_sx = gs_effect_get_param_by_name(effect, "ep_sx");
 	ctx->ep_sy = gs_effect_get_param_by_name(effect, "ep_sy");
+	ctx->ep_tex = gs_effect_get_param_by_name(ctx->tex_effect, "image");
 
+	ctx->time = 0.0f;
+	audio_window_t aw;
+	audio_window_init(&aw, 2, 1024);
+	audio_window_free(&aw);
 	return ctx;
 }
 
@@ -343,6 +379,10 @@ static void lineaa_source_destroy(void *data)
 {
 	struct source_context *ctx = data;
 	
+	obs_enter_graphics();
+	gs_texrender_destroy(ctx->texrender);
+	obs_leave_graphics();
+
 	cleanup_index_buffer(ctx);
 	cleanup_vertex_buffer(ctx);
 	
@@ -396,7 +436,11 @@ static void lineaa_source_render(void *data, gs_effect_t *effect)
 	
 	gs_vertbuffer_t *vb = ctx->vb;
 	gs_indexbuffer_t *ib = ctx->ib;
+
+	
 	if (!vb || !ib) return;
+
+
 
 	gs_vertexbuffer_flush(vb);
 	gs_load_vertexbuffer(vb);
@@ -405,18 +449,56 @@ static void lineaa_source_render(void *data, gs_effect_t *effect)
 
 	gs_effect_set_float(ctx->ep_w, 100);
 	gs_effect_set_float(ctx->ep_r, 20);
-	gs_effect_set_float(ctx->ep_sx, 1280);
-	gs_effect_set_float(ctx->ep_sy, 720);
+	gs_effect_set_float(ctx->ep_sx, 1920);
+	gs_effect_set_float(ctx->ep_sy, 1080);
+	
 
+	gs_texrender_begin(ctx->texrender, 1920 / 2, 1080 / 2);
+	struct vec4 blank;
+	vec4_zero(&blank);
+	gs_clear(GS_CLEAR_COLOR, &blank, 0.0f, 0);
+	
 	while (gs_effect_loop(ctx->effect, "Draw"))
 			gs_draw(GS_TRIS, 0, 0);
 	
+	gs_texrender_end(ctx->texrender);
+
 	gs_load_indexbuffer(NULL);
 	gs_load_vertexbuffer(NULL);
+
+	gs_effect_set_texture(ctx->ep_tex, gs_texrender_get_texture(ctx->texrender));
+	while (gs_effect_loop(ctx->tex_effect, "Draw"))
+		gs_draw_sprite(gs_texrender_get_texture(ctx->texrender), 0, 1920, 1080);
+	
+	gs_texrender_reset(ctx->texrender);
+
 }
 
 static void lineaa_source_tick(void *data, float seconds)
 {
+	struct source_context *ctx = data;
+	float cx, cy, x1, x2, y1, y2, x ,y;
+	 
+	float theta = ctx->time;
+	ctx->time += seconds;
+
+	lines_start(ctx->lines_ctx);
+	cx = 1920.0f / 2.0f;
+	cy = 1080.0f / 2.0f;
+	x = 500.0f * cosf(theta * 0.5f) * sinf(theta);
+	y = 500.0f * sinf(theta * 0.1f);
+	x1 = cx + x;
+	y1 = cy + y;
+	x2 = cx - x;
+	y2 = cy - y;
+	struct vec4 color;
+	vec4_from_rgba(&color, 0xFF10505F);
+	line_f(ctx->lines_ctx, cx + x, cy + y, cx - x, cy - y, &color, 100 + 30 * sinf(theta));
+	vec4_from_rgba(&color, 0xC0333333);
+	line_f(ctx->lines_ctx, cx + y, cy + x, cx - y, cy - x, &color, 30 + 30 * cosf(theta));
+	lines_end(ctx->lines_ctx);
+	setup_index_buffer(ctx);
+	setup_vertex_buffer(ctx);
 
 }
 
