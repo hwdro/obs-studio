@@ -68,36 +68,9 @@ void audiocapture_copy_buffers(audiocapture_t *ac, audiobuf_t *dst)
 	pthread_mutex_unlock(&ac->data_mutex);
 }
 
-
-static obs_source_t *find_audio_source_by_name(struct dstr *audio_source_name)
+static inline bool is_audio_source(obs_source_t *source)
 {
-	obs_source_t *audio_source = NULL;
-
-	for (uint32_t i = 1; i <= 10; i++) {
-		obs_source_t *source = obs_get_output_source(i);
-
-		if (!source)
-			continue;
-
-		if (!(obs_source_get_output_flags(source) & OBS_SOURCE_AUDIO))
-			continue;
-
-		const char *name = obs_source_get_name(source);
-
-		if (audio_source_name->array)
-			if (!dstr_cmp(audio_source_name, name)) {
-				audio_source = source;
-				break;
-			}
-
-		obs_source_release(source);
-	}
-
-	if (!audio_source && audio_source_name->array)
-		audio_source = obs_get_source_by_name(audio_source_name->array);
-
-	return audio_source;
-
+	return !!(obs_source_get_flags(source) & OBS_SOURCE_AUDIO);
 }
 
 static void audiocapture_start(audiocapture_t *ac)
@@ -105,19 +78,26 @@ static void audiocapture_start(audiocapture_t *ac)
 	if (!ac) return;
 	if (ac->audio_source) return;
 
-	obs_source_t *audio_source;
+	obs_source_t *source       = NULL;
+	const char *source_name    = ac->audio_source_name.array;
 	
-	audio_source = find_audio_source_by_name(&ac->audio_source_name);
+	if (source_name)
+		source = obs_get_source_by_name(source_name);
 
-	if (!audio_source) return;
+	if (!source) return;
 
-	ac->audio_source     = audio_source;
-	signal_handler_t *sh = obs_source_get_signal_handler(audio_source);
+	if (!is_audio_source(source)) {
+		obs_source_release(source);
+		return;
+	}
 
-	obs_source_add_audio_capture_callback(audio_source,
-		audio_source_data_callback, ac);
+	ac->audio_source     = source;
+	signal_handler_t *sh = obs_source_get_signal_handler(source);
 
 	signal_handler_connect(sh, "remove", audio_source_removed, ac);
+	
+	obs_source_add_audio_capture_callback(source,
+		audio_source_data_callback, ac);
 }
 
 static void audiocapture_stop(audiocapture_t *ac)
@@ -128,14 +108,14 @@ static void audiocapture_stop(audiocapture_t *ac)
 	signal_handler_t *sh = obs_source_get_signal_handler(ac->audio_source);
 
 	pthread_mutex_lock(&ac->data_mutex);
-	{
-		obs_source_remove_audio_capture_callback(
-			ac->audio_source, audio_source_data_callback, ac);
-		signal_handler_disconnect(sh, "remove", audio_source_removed,
-					  ac);
-	}
-	pthread_mutex_unlock(&ac->data_mutex);
 
+	obs_source_remove_audio_capture_callback(
+	    ac->audio_source, audio_source_data_callback, ac);
+
+	signal_handler_disconnect(sh, "remove", audio_source_removed, ac);
+	
+	pthread_mutex_unlock(&ac->data_mutex);
+	
 	obs_source_release(ac->audio_source);
 
 	ac->audio_source = NULL;

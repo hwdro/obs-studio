@@ -42,7 +42,8 @@ static void source_update(void *data, obs_data_t *settings)
 	if (ctx->audioc)
 		audiocapture_destroy(ctx->audioc);
 
-	audiocapture_create(audio_source_name, ctx->channels, ctx->frame_size);
+	ctx->audioc = audiocapture_create(audio_source_name, ctx->channels,
+					  ctx->frame_size);
 }
 
 static void *source_create(obs_data_t *settings, obs_source_t *source)
@@ -93,55 +94,38 @@ static void source_render(void *data, gs_effect_t *effect)
 struct enum_sources_proc_params
 {
 	obs_property_t *prop;
-	struct audiovis_source *context;
+	source_context_t *context;
 };
 
 
 bool enum_sources_proc(void *param, obs_source_t *source)
 {
-	struct enum_sources_proc_params *params = param;
-	struct audiovis_source *context = params->context;
-	obs_property_t *prop = params->prop;
+	obs_property_t *prop = param;
+
 	const char *name = obs_source_get_name(source);
-	uint32_t flags = obs_source_get_output_flags(source);
+	uint32_t flags   = obs_source_get_output_flags(source);
 
-	if (flags & OBS_SOURCE_AUDIO)
+	if (flags & OBS_SOURCE_AUDIO) {
 		obs_property_list_add_string(prop, name, name);
-
+		blog(LOG_WARNING, "Asrc: %s ", name);
+	}
 	return true;
 }
 
 static obs_properties_t *source_properties(void *data)
 {
-	struct audiovis_source *context = data;
+	source_context_t *context = data;
 	obs_properties_t *props;
 	obs_property_t *prop;
 
 	props = obs_properties_create();
 
-	prop = obs_properties_add_list(
-		props,
-		SETTINGS_AUDIO_SOURCE_NAME,
-		PROPERTIES_AUDIO_SOURCES_LIST_LABEL,
-		OBS_COMBO_TYPE_LIST,
-		OBS_COMBO_FORMAT_STRING);
+	prop = obs_properties_add_list(props, SETTINGS_AUDIO_SOURCE_NAME,
+				       PROPERTIES_AUDIO_SOURCES_LIST_LABEL,
+				       OBS_COMBO_TYPE_LIST,
+				       OBS_COMBO_FORMAT_STRING);
 
-	struct enum_sources_proc_params params = { prop, context };
-
-	//params.prop = prop;
-	//params.context = context;
-
-	for (uint32_t i = 1; i <= 10; i++) {
-		obs_source_t *source = obs_get_output_source(i);
-		if (source) {
-			enum_sources_proc(&params, source);
-			obs_source_release(source);
-		}
-	}
-
-	obs_enum_sources(enum_sources_proc, &params);
-
-	//visual_get_properties(context->vis_info, props);
+	obs_enum_sources(enum_sources_proc, prop);
 
 	return props;
 }
