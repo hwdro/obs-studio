@@ -12,11 +12,13 @@ include_directories(${FFMPEG_INCLUDE_DIRS})
 set(audio-vis_SOURCES
 	audio-visualizer.c
 	vis-spectrum.c
-	audiocapture.c)
+	audiocapture.c
+	vg.c)
 set(audio-vis_HEADERS
 	slidingbuf.h
 	audiobuf.h
-	audiocapture.h)
+	audiocapture.h
+	vg.h)
 
 add_library(audio-vis MODULE
 	${audio-vis_HEADERS}

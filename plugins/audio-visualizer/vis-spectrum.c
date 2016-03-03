@@ -1,5 +1,6 @@
 #include <obs-module.h>
 #include "audiocapture.h"
+#include "vg.h"
 
 #define SPECTRUM_NAME obs_module_text("Spectrum.Name")
 
@@ -10,6 +11,8 @@
 
 struct source_context {
 	audiocapture_t *audioc;
+	audiobuf_t audio_data;
+	vg_context_t vg;
 	uint32_t cx, cy;
 
 	uint32_t channels;
@@ -37,13 +40,18 @@ static void source_update(void *data, obs_data_t *settings)
 
 	ctx->channels    = get_audio_channels(oai.speakers);
 	ctx->sample_rate = oai.samples_per_sec;
-	ctx->frame_size  = 1024;
+	ctx->frame_size  = ctx->cx;
+
+	audiobuf_free(&ctx->audio_data);
+	audiobuf_init(&ctx->audio_data, ctx->channels, ctx->frame_size);
 
 	if (ctx->audioc)
 		audiocapture_destroy(ctx->audioc);
 
 	ctx->audioc = audiocapture_create(audio_source_name, ctx->channels,
 					  ctx->frame_size);
+	
+	vg_context_init(&ctx->vg);
 }
 
 static void *source_create(obs_data_t *settings, obs_source_t *source)
@@ -63,7 +71,8 @@ static void *source_create(obs_data_t *settings, obs_source_t *source)
 static void source_destroy(void *data)
 {
 	source_context_t *ctx = data;
-
+	vg_context_free(&ctx->vg);
+	audiobuf_free(&ctx->audio_data);
 	audiocapture_destroy(ctx->audioc);
 	bfree(ctx);
 }
@@ -80,10 +89,44 @@ static uint32_t source_getheight(void *data)
 	return ctx->cy;
 }
 
+static void draw_scopes(source_context_t *ctx)
+{
+	vg_context_t *pc = &ctx->vg;
+	uint32_t cx, cy;
+
+	cx = ctx->cx;
+	cy = ctx->cy;
+	
+	vg_begin_paint(pc);
+	
+	float *audio[2];
+	
+	audio[0] = audiobuf_get_buffer(&ctx->audio_data, 0);
+	audio[1] = audiobuf_get_buffer(&ctx->audio_data, 1);
+
+	size_t frame_size = audiobuf_get_frame_size(&ctx->audio_data);
+
+	struct vec4 color;
+	vec4_from_rgba(&color, 0xFFFFFFFF);
+
+	for (int i = 0; i < frame_size; i++) {
+		vg_draw_rectangle_f(pc, (float)i, (float)cy / 4,
+			(float)i + 1.0f,
+			(float)cy / 4 *(2 - audio[0][i]), &color);
+
+		vg_draw_rectangle_f(pc, (float)i, (float)cy * 3 / 4,
+			(float)i + 1.0f,
+			(float)cy / 4 * (4 - audio[1][i]), &color);
+	}
+	
+	vg_end_paint(pc);
+}
 
 static void source_tick(void *data, float seconds)
 {
-
+	source_context_t *ctx = (source_context_t *)data;
+	audiocapture_copy_buffers(ctx->audioc, &ctx->audio_data);
+	draw_scopes(ctx);
 }
 
 static void source_render(void *data, gs_effect_t *effect)
@@ -138,7 +181,7 @@ static void source_defaults(obs_data_t *settings)
 struct obs_source_info spectrum_source = {
 	.id = "av_spectrum_source",
 	.type = OBS_SOURCE_TYPE_INPUT,
-	.output_flags = OBS_SOURCE_VIDEO,
+	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW,
 	.get_name = source_get_name,
 	.create = source_create,
 	.destroy = source_destroy,
