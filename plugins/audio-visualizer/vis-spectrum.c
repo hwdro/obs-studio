@@ -13,11 +13,15 @@ struct source_context {
 	audiocapture_t *audioc;
 	audiobuf_t audio_data;
 	vg_context_t vg;
+
+	gs_effect_t *effect;
+	
 	uint32_t cx, cy;
 
 	uint32_t channels;
 	uint32_t sample_rate;
 	uint32_t frame_size;
+
 
 };
 typedef struct source_context source_context_t;
@@ -62,6 +66,16 @@ static void *source_create(obs_data_t *settings, obs_source_t *source)
 	
 	ctx->cx = 1280;
 	ctx->cy = 720;
+
+	char *file = obs_module_file("shapes.effect");
+
+	obs_enter_graphics();
+	gs_effect_t *effect = gs_effect_create_from_file(file, NULL);
+	obs_leave_graphics();
+
+	bfree(file);
+
+	ctx->effect = effect;
 
 	source_update(ctx, settings);
 
@@ -110,13 +124,14 @@ static void draw_scopes(source_context_t *ctx)
 	vec4_from_rgba(&color, 0xFFFFFFFF);
 
 	for (int i = 0; i < frame_size; i++) {
+		float h = cy / 4;
+		float y1 = cy / 4 + h * (-1.0f * audio[0][i]);
+		float y2 = cy * 3 / 4 + h * (-1.0f * audio[1][i]);
 		vg_draw_rectangle_f(pc, (float)i, (float)cy / 4,
-			(float)i + 1.0f,
-			(float)cy / 4 *(2 - audio[0][i]), &color);
+				    (float)i + 1.0f, y1, &color);
 
 		vg_draw_rectangle_f(pc, (float)i, (float)cy * 3 / 4,
-			(float)i + 1.0f,
-			(float)cy / 4 * (4 - audio[1][i]), &color);
+				    (float)i + 1.0f, y2, &color);
 	}
 	
 	vg_end_paint(pc);
@@ -131,7 +146,22 @@ static void source_tick(void *data, float seconds)
 
 static void source_render(void *data, gs_effect_t *effect)
 {
+	source_context_t *ctx = (source_context_t *)data;
+	gs_vertbuffer_t *vb   = ctx->vg.vb;
+	gs_indexbuffer_t *ib  = ctx->vg.ib;
 
+	if (!vb || !ib) return;
+
+	gs_vertexbuffer_flush(vb);
+	gs_load_vertexbuffer(vb);
+	gs_indexbuffer_flush(ib);
+	gs_load_indexbuffer(ib);
+
+	while (gs_effect_loop(ctx->effect, "Draw"))
+		gs_draw(GS_TRIS, 0, 0);
+
+	gs_load_indexbuffer(NULL);
+	gs_load_vertexbuffer(NULL);
 }
 
 struct enum_sources_proc_params
