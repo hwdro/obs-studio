@@ -27,7 +27,10 @@ VertInOut VSDefault(VertInOut vert_in)
 
 float4 PSDrawBare(VertInOut vert_in) : TARGET
 {
-	return image.Sample(def_sampler, vert_in.uv) * vert_in.col;
+	float ft_a = image.Sample(def_sampler, vert_in.uv).a;
+	float4 color = vert_in.col;
+	color.a *= ft_a;
+	return color;
 }
 
 float4 PSDrawMatrix(VertInOut vert_in) : TARGET

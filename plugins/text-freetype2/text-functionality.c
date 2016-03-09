@@ -280,8 +280,8 @@ void cache_glyphs(struct ft2_source *srcdata, wchar_t *cache_glyphs)
 		for (uint32_t y = 0; y < g_h; y++) {
 			for (uint32_t x = 0; x < g_w; x++) {
 				alpha = slot->bitmap.buffer[glyph_pos];
-				srcdata->texbuf[buf_pos] =
-					0x00FFFFFF ^ ((uint32_t)alpha << 24);
+				srcdata->texbuf[buf_pos] = alpha;
+					//0x00FFFFFF ^ ((uint32_t)alpha << 24);
 			}
 		}
 
@@ -310,7 +310,7 @@ void cache_glyphs(struct ft2_source *srcdata, wchar_t *cache_glyphs)
 		}
 
 		srcdata->tex = gs_texture_create(texbuf_w, texbuf_h,
-			GS_RGBA, 1, (const uint8_t **)&srcdata->texbuf, 0);
+			GS_A8, 1, (const uint8_t **)&srcdata->texbuf, 0);
 
 		obs_leave_graphics();
 	}
