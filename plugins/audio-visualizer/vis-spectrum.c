@@ -2,6 +2,8 @@
 #include "audiocapture.h"
 #include "vg.h"
 
+#include <util\circlebuf.h>
+
 #define SPECTRUM_NAME obs_module_text("Spectrum.Name")
 
 #define SETTINGS_AUDIO_SOURCE_NAME "Audio.Source"
@@ -21,6 +23,7 @@ struct source_context {
 	uint32_t channels;
 	uint32_t sample_rate;
 	uint32_t frame_size;
+	slidingbuf_t peaks;
 
 
 };
@@ -51,7 +54,10 @@ static void source_update(void *data, obs_data_t *settings)
 
 	if (ctx->audioc)
 		audiocapture_destroy(ctx->audioc);
-
+	
+	slidingbuf_free(&ctx->peaks);
+	slidingbuf_init(&ctx->peaks, ctx->frame_size * sizeof(float));
+	
 	ctx->audioc = audiocapture_create(audio_source_name, ctx->channels,
 					  ctx->frame_size);
 	
@@ -64,7 +70,7 @@ static void *source_create(obs_data_t *settings, obs_source_t *source)
 
 	ctx = bzalloc(sizeof(source_context_t));
 	
-	ctx->cx = 1280;
+	ctx->cx =1280;
 	ctx->cy = 720;
 
 	char *file = obs_module_file("shapes.effect");
@@ -88,6 +94,7 @@ static void source_destroy(void *data)
 	vg_context_free(&ctx->vg);
 	audiobuf_free(&ctx->audio_data);
 	audiocapture_destroy(ctx->audioc);
+	slidingbuf_free(&ctx->peaks);
 	bfree(ctx);
 }
 
@@ -103,6 +110,38 @@ static uint32_t source_getheight(void *data)
 	return ctx->cy;
 }
 
+static calc_peak(source_context_t *ctx)
+{
+	size_t frame_size = audiobuf_get_frame_size(&ctx->audio_data);
+	float *audio[2];
+	float peakL, peakR;
+	peakL = peakR = 0.0f;
+#define DB_MIN1 -52.0f
+
+	audio[0] = audiobuf_get_buffer(&ctx->audio_data, 0);
+	audio[1] = audiobuf_get_buffer(&ctx->audio_data, 1);
+	float m = 0;
+	for (int i = 0; i < frame_size; i++) {
+		float c = audio[0][i] * audio[0][i];
+		peakL += c;
+		if (m < c)
+			m = c;
+		peakR += audio[1][i] * audio[1][i];
+	}
+	peakL = sqrtf(peakL / (float)frame_size);
+	peakR = sqrtf(peakR / (float)frame_size);
+	m = sqrtf(m);
+	//peakL = m;
+	if (peakL) {
+		peakL = 20 * log10f(peakL);
+		if (peakL < DB_MIN1)
+			peakL = 0.0f;
+		else
+			peakL = (DB_MIN1 - peakL) / (DB_MIN1);
+	}
+	slidingbuf_push_back(&ctx->peaks, &peakL, sizeof(float));
+}
+
 static void draw_scopes(source_context_t *ctx)
 {
 	vg_context_t *pc = &ctx->vg;
@@ -110,26 +149,40 @@ static void draw_scopes(source_context_t *ctx)
 
 	cx = ctx->cx;
 	cy = ctx->cy;
-	
+	calc_peak(ctx);
 	vg_begin_paint(pc);
 	
 	float *audio[2];
-	
+	float *peaks[2];
 	audio[0] = audiobuf_get_buffer(&ctx->audio_data, 0);
 	audio[1] = audiobuf_get_buffer(&ctx->audio_data, 1);
+
+	peaks[0] = (float *)ctx->peaks.data;
 
 	size_t frame_size = audiobuf_get_frame_size(&ctx->audio_data);
 
 	struct vec4 color;
-	vec4_from_rgba(&color, 0xFFFFFFFF);
-
+	
 	for (int i = 0; i < frame_size; i++) {
 		float h = cy / 4;
-		float y1 = cy / 4 + h * (-1.0f * audio[0][i]);
-		float y2 = cy * 3 / 4 + h * (-1.0f * audio[1][i]);
-		vg_draw_rectangle_f(pc, (float)i, (float)cy / 4,
-				    (float)i + 1.0f, y1, &color);
+		float y1;
+		vec4_from_rgba(&color, 0xFFFFFFFF);
 
+		if (i < frame_size - 30) {
+			y1 = cy / 2 + h * (-2.0f * peaks[0][i + 30]);
+			color.x = color.z = color.y = 1.0f;
+		}
+		else {
+			y1 = cy / 2 + h * (-2.0f * peaks[0][frame_size - 1]);
+			vec4_from_rgba(&color, 0xFF00FFFF);
+		}
+		float y2 = cy * 3 / 4 + h * (-1.0f * audio[1][i]);
+		
+		
+		vg_draw_rectangle_f(pc, (float)i, (float)cy / 2,
+				    (float)i + 1.0f, y1, &color);
+		vec4_from_rgba(&color, 0xFFFFFFFF);
+		color.z = fabsf(audio[1][i]);
 		vg_draw_rectangle_f(pc, (float)i, (float)cy * 3 / 4,
 				    (float)i + 1.0f, y2, &color);
 	}
@@ -141,7 +194,7 @@ static void source_tick(void *data, float seconds)
 {
 	source_context_t *ctx = (source_context_t *)data;
 	audiocapture_copy_buffers(ctx->audioc, &ctx->audio_data);
-	draw_scopes(ctx);
+		draw_scopes(ctx);
 }
 
 static void source_render(void *data, gs_effect_t *effect)

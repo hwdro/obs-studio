@@ -47,25 +47,26 @@ bool audiocapture_is_active(audiocapture_t *ac)
 	return false;
 }
 
-void audiocapture_copy_buffers(audiocapture_t *ac, audiobuf_t *dst)
+bool audiocapture_copy_buffers(audiocapture_t *ac, audiobuf_t *dst)
 {
-	if (!dst && !ac && !ac->audio_source) return;
+	if (!dst && !ac && !ac->audio_source) return false;
 
-	if (dst->frame_size != ac->audio_buffers.frame_size) return;
-	if (dst->channels != ac->audio_buffers.channels) return;
+	if (dst->frame_size != ac->audio_buffers.frame_size) return false;
+	if (dst->channels != ac->audio_buffers.channels) return false;
 	
-	//if (os_atomic_load_bool(&ac->data_consumed)) return;
+	if (os_atomic_load_bool(&ac->data_consumed)) return false;
 
-	if (pthread_mutex_trylock(&ac->data_mutex)) return;
+	if (pthread_mutex_trylock(&ac->data_mutex)) return false;
 	
 	for (size_t i = 0; i < dst->channels; i++)
 		memcpy(dst->sbuffers[i]->data,
 		       ac->audio_buffers.sbuffers[i]->data,
 		       dst->frame_size * sizeof(float));
 
-	//os_atomic_set_bool(&ac->data_consumed, true);
+	os_atomic_set_bool(&ac->data_consumed, true);
 
 	pthread_mutex_unlock(&ac->data_mutex);
+	return true;
 }
 
 static inline bool is_audio_source(obs_source_t *source)
@@ -133,14 +134,14 @@ static void audio_source_data_callback(void *vptr, obs_source_t *source,
 
 	//ab->volume = obs_source_get_volume(source);
 	ab->muted  = muted;
-
+	//if (!os_atomic_load_bool(&ac->data_consumed)) return;
 	//if (!pthread_mutex_trylock(&ac->data_mutex)) return;
 	pthread_mutex_lock(&ac->data_mutex);
 	for (int i = 0; i < channels; i++)
 		audiobuf_push_frame(ab, i, (float *)data->data[i],
 				    data->frames);
 
-	//os_atomic_set_bool(&ac->data_consumed, false);
+	os_atomic_set_bool(&ac->data_consumed, false);
 
 	pthread_mutex_unlock(&ac->data_mutex);
 }

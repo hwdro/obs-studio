@@ -30,7 +30,7 @@ bool audiocapture_is_active(audiocapture_t *ac);
 // Copy current audio buffers. It does nothing if audio capturing isn't started
 // or if there is no new data.
 
-void audiocapture_copy_buffers(audiocapture_t *ac, audiobuf_t *dst);
+bool audiocapture_copy_buffers(audiocapture_t *ac, audiobuf_t *dst);
 
 
 

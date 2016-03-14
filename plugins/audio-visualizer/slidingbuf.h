@@ -44,6 +44,7 @@ static inline void slidingbuf_init(struct slidingbuf *sb, size_t size)
 {
 	memset(sb, 0, sizeof(struct slidingbuf));
 	sb->data = bzalloc(size);
+	sb->size = size;
 }
 
 static inline void slidingbuf_free(struct slidingbuf *sb)
