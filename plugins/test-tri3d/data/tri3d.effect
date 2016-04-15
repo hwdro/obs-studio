@@ -1,4 +1,5 @@
-uniform float4x4 ViewProj;
+//uniform float4x4 ViewProj;
+uniform float4x4 mvp;
 
 struct VertInOut {
 	float4 pos : POSITION;
@@ -8,7 +9,7 @@ struct VertInOut {
 VertInOut VSDefault(VertInOut vert_in)
 {
 	VertInOut vert_out;
-	vert_out.pos = mul(float4(vert_in.pos.xyz, 1.0), ViewProj);
+	vert_out.pos = mul(mvp, float4(vert_in.pos.xyz, 1.0));
 	vert_out.color = vert_in.color;
 	return vert_out;
 }
