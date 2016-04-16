@@ -10,9 +10,12 @@ find_package(FFmpeg REQUIRED
 include_directories(${FFMPEG_INCLUDE_DIRS})
 
 set(test-tri3d_SOURCES
-	test-tri3d.c)
+	test-tri3d.c
+	object3D.c)
 set(test-tri3d_HEADERS
-	test-tri3d.h)
+	test-tri3d.h
+	object3D.h
+	textured-rectangle.h)
 
 add_library(test-tri3d MODULE
 	${test-tri3d_HEADERS}
