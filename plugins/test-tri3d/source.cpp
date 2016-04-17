@@ -3,6 +3,8 @@
 
 #include "object.hpp"
 #include "camera.hpp"
+#include "render-target.hpp"
+#include "texture-renderer.hpp"
 
 class Source {
 private:
@@ -11,6 +13,9 @@ private:
 	Cube cube;
 	Object object;
 	Camera camera;
+	RenderTarget render_target;
+	TextureRenderer tex_renderer;
+
 public:
 	Source() = delete;
 	Source(Source&) = delete;
@@ -32,11 +37,16 @@ Source::Source(obs_data_t *settings, obs_source_t *source)
 
 	cube.Set();
 	object.AttachModel(&cube);
+	object.transform.SetScale(2.0f, 2.0f, 2.0f);
 
-	camera.Perspective(aspect, 70.0f, 0.01f, 1000.0f);
+	camera.Perspective(aspect, 70.0f, 0.1f, 1000.0f);
 	object.AttachCamera(&camera);
 
 	object.LoadEffect("rectangle.effect");
+
+	render_target.Create(width, height, GS_RGBA, GS_Z32F);
+
+	tex_renderer.SetupEffect("texture.effect");
 
 	obs_source_update(source, settings);
 }
@@ -68,7 +78,7 @@ uint32_t Source::Height()
 void Source::Tick(float seconds)
 {
 	global_time += seconds;
-	vec3 campos = { 5*cosf(global_time), 0.0f, 5*sinf(global_time) };
+	vec3 campos = { 5*cosf(global_time), 3*sinf(global_time), 5*sinf(global_time) };
 	vec3 target = { 0.0f, 0.0f, 0.0f };
 	camera.LookAt(&campos, &target);
 	
@@ -77,10 +87,18 @@ void Source::Tick(float seconds)
 void Source::Render(gs_effect_t *eff)
 {
 	UNUSED_PARAMETER(eff);
+
+	render_target.Enable();
+
 	object.BeginRendering();
 	object.Render();
 	object.EndRendering();
+	render_target.Disable();
+
+	tex_renderer.Render(render_target.GetTexture());
+	render_target.Reset();
 }
+
 
 static const char * GetSourceName(void *type_data)
 {

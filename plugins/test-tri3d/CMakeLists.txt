@@ -18,6 +18,8 @@ set(test-tri3d_SOURCES
 	object.cpp
 	transform.cpp
 	camera.cpp
+	render-target.cpp
+	texture-renderer.cpp
 	source.cpp)
 set(test-tri3d_HEADERS
 	vertex-buffer.hpp
@@ -26,6 +28,8 @@ set(test-tri3d_HEADERS
 	model.hpp
 	transform.hpp
 	camera.hpp
+	render-target.hpp
+	texture-renderer.hpp
 	object.hpp)
 
 add_library(test-tri3d MODULE

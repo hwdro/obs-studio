@@ -111,7 +111,7 @@ void Cube::Set()
 		colors[i + 0] = 0xFF0000FF;
 		colors[i + 1] = 0xFF00FF00;
 		colors[i + 2] = 0xFFFF0000;
-		colors[i + 3] = 0xFFFFFFFF;
+		colors[i + 3] = 0x33FFFFFF;
 	}
 	vertex_buffer.Load(vertices, colors, nullptr, nullptr, nullptr, 24);
 	index_buffer.Load(indices, 36);
