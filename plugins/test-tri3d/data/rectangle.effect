@@ -1,0 +1,34 @@
+//uniform float4x4 ViewProj;
+//uniform float4x4 mvp;
+uniform float4x4 transform_matrix;
+uniform float4x4 view_matrix;
+uniform float4x4 proj_matrix;
+
+struct VertInOut {
+	float4 pos : POSITION;
+	float4 color : COLOR;
+};
+
+VertInOut VSDefault(VertInOut vert_in)
+{
+	VertInOut vert_out;
+	float4x4 m = mul(proj_matrix, view_matrix);
+	m = mul(m, transform_matrix);
+	vert_out.pos =  mul(m, float4(vert_in.pos.xyz, 1.0));
+	vert_out.color = vert_in.color;
+	return vert_out;
+}
+
+float4 PSDraw(VertInOut vert_in) : TARGET
+{
+	return vert_in.color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(vert_in);
+		pixel_shader  = PSDraw(vert_in);
+	}
+}

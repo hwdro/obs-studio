@@ -10,12 +10,23 @@ find_package(FFmpeg REQUIRED
 include_directories(${FFMPEG_INCLUDE_DIRS})
 
 set(test-tri3d_SOURCES
-	test-tri3d.c
-	object3D.c)
+	plugin-main.cpp
+	vertex-buffer.cpp
+	index-buffer.cpp
+	effect.cpp
+	model.cpp
+	object.cpp
+	transform.cpp
+	camera.cpp
+	source.cpp)
 set(test-tri3d_HEADERS
-	test-tri3d.h
-	object3D.h
-	textured-rectangle.h)
+	vertex-buffer.hpp
+	index-buffer.hpp
+	effect.hpp
+	model.hpp
+	transform.hpp
+	camera.hpp
+	object.hpp)
 
 add_library(test-tri3d MODULE
 	${test-tri3d_HEADERS}
