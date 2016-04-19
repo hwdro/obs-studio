@@ -43,16 +43,8 @@ void Object::BeginRendering()
 
 void Object::Render()
 {
-	vec4 color = { 0.0f, 1.0f, 0.0f, 0.0f };
-	gs_enable_depth_test(true);
-	gs_depth_function(GS_LESS);
-
-
-	gs_clear(GS_CLEAR_COLOR | GS_CLEAR_DEPTH, &color, 1.0f, 0);
-
 	while (gs_effect_loop(effect.GetEffect(), "Draw"))
 		gs_draw(GS_TRIS, 0, 0);
-	gs_enable_depth_test(false);
 }
 
 void Object::EndRendering()

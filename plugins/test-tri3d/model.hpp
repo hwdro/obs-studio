@@ -16,9 +16,9 @@ public:
 	~Model();
 };
 
-class Rectangle : public Model {
+class Plane: public Model {
 public:
-	void Set(float width, float height);
+	void Set(float width, float height, vec4 *color);
 };
 
 class Cube : public Model {

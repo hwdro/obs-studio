@@ -23,7 +23,7 @@ Model::~Model()
 {
 }
 
-void Rectangle::Set(float width, float height)
+void Plane::Set(float width, float height, vec4 *color)
 {
 	float hw = width / 2;
 	float hh = height / 2;
@@ -36,11 +36,11 @@ void Rectangle::Set(float width, float height)
 	vec3_set(&verts[1], -hw, -hh, 0.0f);
 	vec3_set(&verts[2], hw, hh, 0.0f);
 	vec3_set(&verts[3], hw, -hh, 0.0f);
-
-	colors[0] = 0xFF0000FF;
-	colors[1] = 0xFF00FF00;
-	colors[2] = 0xFFFF0000;
-	colors[3] = 0xFFFFFFFF;
+	uint32_t c = vec4_to_rgba(color);
+	colors[0] = c;
+	colors[1] = c;
+	colors[2] = c;
+	colors[3] = c;
 
 	indexes[0] = 0;
 	indexes[1] = 1;
@@ -109,9 +109,9 @@ void Cube::Set()
 
 	for (int i = 0; i < 24; i += 4) {
 		colors[i + 0] = 0xFF0000FF;
-		colors[i + 1] = 0xFF00FF00;
-		colors[i + 2] = 0xFFFF0000;
-		colors[i + 3] = 0x33FFFFFF;
+		colors[i + 1] = 0xFF0000FF;
+		colors[i + 2] = 0xFFFF00FF;
+		colors[i + 3] = 0xFF00FFFF;
 	}
 	vertex_buffer.Load(vertices, colors, nullptr, nullptr, nullptr, 24);
 	index_buffer.Load(indices, 36);

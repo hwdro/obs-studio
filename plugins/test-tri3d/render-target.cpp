@@ -27,7 +27,15 @@ void RenderTarget::Create(uint32_t w, uint32_t h, enum gs_color_format format, e
 bool RenderTarget::Enable()
 {
 	if (render_target) {
-		return gs_texrender_begin(render_target, width, height);
+		vec4 color = { 0.0f, 0.0f, 0.0f, 0.0f };
+		bool result =  gs_texrender_begin(render_target, width, height);
+		gs_enable_depth_test(true);
+		gs_depth_function(GS_LESS);
+		gs_enable_blending(true);
+		gs_blend_function(GS_BLEND_SRCALPHA, GS_BLEND_INVSRCALPHA);
+		gs_clear(GS_CLEAR_COLOR | GS_CLEAR_DEPTH, &color, 1.0f, 0);
+
+		return result;
 	}
 	return false;
 }
@@ -36,6 +44,7 @@ void RenderTarget::Disable()
 {
 	if (render_target) {
 		gs_texrender_end(render_target);
+		gs_enable_depth_test(false);
 	}
 }
 

@@ -11,7 +11,9 @@ private:
 	uint32_t width, height;
 	float global_time;
 	Cube cube;
-	Object object;
+	Plane plane;
+	Object object[2];
+
 	Camera camera;
 	RenderTarget render_target;
 	TextureRenderer tex_renderer;
@@ -36,13 +38,22 @@ Source::Source(obs_data_t *settings, obs_source_t *source)
 	float aspect = (float)width / (float)height;
 
 	cube.Set();
-	object.AttachModel(&cube);
-	object.transform.SetScale(2.0f, 2.0f, 2.0f);
+	object[0].AttachModel(&cube);
+	object[0].transform.SetScale(2.0f, 2.0f, 2.0f);
+	object[0].transform.IncreasePosition(0.0f, 0.0f, 0.0f);
 
 	camera.Perspective(aspect, 70.0f, 0.1f, 1000.0f);
-	object.AttachCamera(&camera);
+	object[0].AttachCamera(&camera);
 
-	object.LoadEffect("rectangle.effect");
+	object[0].LoadEffect("rectangle.effect");
+
+	vec4 color = { 0.2f, 0.2f, 0.2f, 0.95f };
+	plane.Set(10.0f, 10.0f, &color);
+
+	object[1].transform.IncreaseRotation(M_PI / 2.0f, 0.0f, 0.0f);
+	object[1].AttachModel(&plane);
+	object[1].AttachCamera(&camera);
+	object[1].LoadEffect("rectangle.effect");
 
 	render_target.Create(width, height, GS_RGBA, GS_Z32F);
 
@@ -78,8 +89,10 @@ uint32_t Source::Height()
 void Source::Tick(float seconds)
 {
 	global_time += seconds;
-	vec3 campos = { 5*cosf(global_time), 3*sinf(global_time), 5*sinf(global_time) };
+	//vec3 campos = { 5*cosf(global_time), 0.5f + abs(2.0f*sinf(global_time)), 2*sinf(global_time) };
+	vec3 campos = { 5.0f, 5.0f, 2.0f };
 	vec3 target = { 0.0f, 0.0f, 0.0f };
+	object[0].transform.IncreaseRotation(0.0f, seconds * 2.0f, 0.0f);
 	camera.LookAt(&campos, &target);
 	
 }
@@ -89,10 +102,11 @@ void Source::Render(gs_effect_t *eff)
 	UNUSED_PARAMETER(eff);
 
 	render_target.Enable();
-
-	object.BeginRendering();
-	object.Render();
-	object.EndRendering();
+	for (int i = 0; i < 2; i++) {
+		object[i].BeginRendering();
+		object[i].Render();
+		object[i].EndRendering();
+	}
 	render_target.Disable();
 
 	tex_renderer.Render(render_target.GetTexture());
