@@ -8,6 +8,7 @@
 class Transform {
 private:
 	matrix4 transform;
+	vec3 origin;
 	vec3 position;
 	vec3 scale;
 	vec3 rotation;
@@ -15,6 +16,7 @@ private:
 	void UpdateTransformMatrix();
 public:
 	Transform();
+	void SetOrigin(float x, float y, float z);
 	void SetPosition(float x, float y, float z);
 	void SetScale(float sx, float sy, float sz);
 	void IncreasePosition(float dx, float dy, float dz);

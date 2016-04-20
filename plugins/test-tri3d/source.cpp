@@ -39,7 +39,7 @@ Source::Source(obs_data_t *settings, obs_source_t *source)
 
 	cube.Set();
 	object[0].AttachModel(&cube);
-	object[0].transform.SetScale(2.0f, 2.0f, 2.0f);
+	object[0].transform.SetScale(1.0f, 1.0f, 1.0f);
 	object[0].transform.IncreasePosition(0.0f, 0.0f, 0.0f);
 
 	camera.Perspective(aspect, 70.0f, 0.1f, 1000.0f);
@@ -90,7 +90,7 @@ void Source::Tick(float seconds)
 {
 	global_time += seconds;
 	//vec3 campos = { 5*cosf(global_time), 0.5f + abs(2.0f*sinf(global_time)), 2*sinf(global_time) };
-	vec3 campos = { 5.0f, 5.0f, 2.0f };
+	vec3 campos = { 0.0f, 1.0f, 4.0f };
 	vec3 target = { 0.0f, 0.0f, 0.0f };
 	object[0].transform.IncreaseRotation(0.0f, seconds * 2.0f, 0.0f);
 	camera.LookAt(&campos, &target);
